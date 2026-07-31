@@ -1,16 +1,16 @@
 {
-  "name": "azoth",
+  "name": "@azoth/ingestion",
   "module": "index.ts",
   "type": "module",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "wrangler": "^4.118.0"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "@azoth/schema": "workspace:*"
   }
 }

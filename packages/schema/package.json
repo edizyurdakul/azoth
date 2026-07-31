@@ -1,12 +1,8 @@
 {
-  "name": "azoth",
+  "name": "@azoth/schema",
   "module": "index.ts",
   "type": "module",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "devDependencies": {
     "@types/bun": "latest"
   },
