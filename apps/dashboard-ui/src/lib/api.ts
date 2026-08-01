@@ -25,16 +25,25 @@ export class ApiError extends Error {
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 	const res = await fetch(path, { credentials: "include", ...init });
+	const text = await res.text();
 	if (!res.ok) {
-		const body = (await res.json().catch(() => null)) as {
-			error?: string;
-		} | null;
-		throw new ApiError(
-			res.status,
-			body?.error ?? `request failed (${res.status})`,
-		);
+		let message = `request failed (${res.status})`;
+		if (text) {
+			try {
+				const body = JSON.parse(text) as { error?: string };
+				if (body.error) {
+					message = body.error;
+				}
+			} catch {
+				// non-JSON error body; keep the fallback message
+			}
+		}
+		throw new ApiError(res.status, message);
 	}
-	return (await res.json()) as T;
+	if (text === "") {
+		return undefined as T;
+	}
+	return JSON.parse(text) as T;
 }
 
 export async function login(secret: string): Promise<void> {
