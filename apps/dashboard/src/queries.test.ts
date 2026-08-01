@@ -1,5 +1,13 @@
 import { describe, expect, test } from "vitest";
-import { pageviewsOverTime, totalPageviews, uniqueVisitors } from "./queries";
+import {
+	bounceRate,
+	breakdown,
+	pageviewsOverTime,
+	topPages,
+	topReferrers,
+	totalPageviews,
+	uniqueVisitors,
+} from "./queries";
 
 const range = {
 	siteId: "site-1",
@@ -30,5 +38,43 @@ describe("uniqueVisitors", () => {
 describe("totalPageviews", () => {
 	test("counts all rows in range", () => {
 		expect(totalPageviews(range)).toContain("COUNT() AS pageviews");
+	});
+});
+
+describe("topPages", () => {
+	test("groups by path ordered by count desc", () => {
+		expect(topPages(range)).toBe(
+			"SELECT blob1 AS name, COUNT() AS pageviews FROM azoth WHERE index1 = 'site-1' AND double1 >= 1700000000000 AND double1 < 1700086400000 GROUP BY name ORDER BY pageviews DESC LIMIT 10",
+		);
+	});
+});
+
+describe("topReferrers", () => {
+	test("filters out empty referrers", () => {
+		expect(topReferrers(range)).toBe(
+			"SELECT blob2 AS name, COUNT() AS pageviews FROM azoth WHERE index1 = 'site-1' AND double1 >= 1700000000000 AND double1 < 1700086400000 AND blob2 != '' GROUP BY name ORDER BY pageviews DESC LIMIT 10",
+		);
+	});
+});
+
+describe("breakdown", () => {
+	test("maps each breakdown field to its blob column", () => {
+		expect(breakdown(range, "browser")).toContain("SELECT blob3 AS name");
+		expect(breakdown(range, "os")).toContain("SELECT blob5 AS name");
+		expect(breakdown(range, "deviceType")).toContain("SELECT blob6 AS name");
+		expect(breakdown(range, "country")).toContain("SELECT blob7 AS name");
+	});
+
+	test("excludes empty values and limits", () => {
+		expect(breakdown(range, "country")).toContain("AND blob7 != ''");
+		expect(breakdown(range, "browser", 5)).toContain("LIMIT 5");
+	});
+});
+
+describe("bounceRate", () => {
+	test("counts visitors appearing exactly once via subquery + countIf", () => {
+		expect(bounceRate(range)).toBe(
+			"SELECT countIf(cnt = 1) AS bounces, COUNT() AS visitors FROM (SELECT COUNT() AS cnt FROM azoth WHERE index1 = 'site-1' AND double1 >= 1700000000000 AND double1 < 1700086400000 GROUP BY blob8)",
+		);
 	});
 });

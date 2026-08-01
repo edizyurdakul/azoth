@@ -19,6 +19,18 @@ function stubQuery(data: unknown[], rows = data.length) {
 	);
 }
 
+function stubQueriesByBody(respond: (sql: string) => unknown[]) {
+	vi.stubGlobal(
+		"fetch",
+		vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+			const sql = String(init?.body ?? "");
+			return new Response(JSON.stringify({ data: respond(sql), rows: 0 }), {
+				status: 200,
+			});
+		}),
+	);
+}
+
 describe("dashboard worker", () => {
 	beforeEach(() => {
 		vi.unstubAllGlobals();
@@ -66,6 +78,81 @@ describe("dashboard worker", () => {
 
 		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual({ uniques: 4 });
+	});
+
+	test("returns breakdown data for an authorized request", async () => {
+		stubQueriesByBody((sql) => {
+			if (sql.includes("countIf(cnt = 1)")) {
+				return [{ bounces: 2, visitors: 5 }];
+			}
+			return [{ name: "/", pageviews: 10 }];
+		});
+
+		const response = await worker.fetch(
+			new Request(
+				"https://dash.example.com/api/breakdown?siteId=site-1&from=1000&to=2000",
+				{ headers: AUTH },
+			),
+			testEnv,
+		);
+
+		expect(response.status).toBe(200);
+		const body = (await response.json()) as {
+			pages: Array<{ name: string; pageviews: number }>;
+			browsers: Array<{ name: string; pageviews: number }>;
+			referrers: Array<{ name: string; pageviews: number }>;
+			bounce: { bounces: number; visitors: number; rate: number };
+		};
+		expect(body.pages).toEqual([{ name: "/", pageviews: 10 }]);
+		expect(body.browsers).toEqual([{ name: "/", pageviews: 10 }]);
+		expect(body.referrers).toEqual([{ name: "/", pageviews: 10 }]);
+		expect(body.bounce).toEqual({ bounces: 2, visitors: 5, rate: 0.4 });
+	});
+
+	test("returns a zero bounce rate when there are no visitors", async () => {
+		stubQueriesByBody(() => [{ bounces: 0, visitors: 0 }]);
+
+		const response = await worker.fetch(
+			new Request(
+				"https://dash.example.com/api/breakdown?siteId=site-1&from=1000&to=2000",
+				{ headers: AUTH },
+			),
+			testEnv,
+		);
+
+		const body = (await response.json()) as {
+			bounce: { bounces: number; visitors: number; rate: number };
+		};
+		expect(body.bounce).toEqual({ bounces: 0, visitors: 0, rate: 0 });
+	});
+
+	test("returns realtime stats over a 5-minute window", async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-08-01T12:00:00Z"));
+		stubQueriesByBody((sql) => {
+			if (sql.includes("COUNT(DISTINCT")) {
+				return [{ uniques: 3 }];
+			}
+			return [{ pageviews: 7 }];
+		});
+
+		try {
+			const response = await worker.fetch(
+				new Request("https://dash.example.com/api/realtime?siteId=site-1", {
+					headers: AUTH,
+				}),
+				testEnv,
+			);
+
+			expect(response.status).toBe(200);
+			expect(await response.json()).toEqual({
+				windowMs: 300000,
+				uniques: 3,
+				pageviews: 7,
+			});
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	test("rejects a malformed siteId with 400", async () => {

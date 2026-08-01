@@ -2,6 +2,8 @@ import { LogOutIcon, PlusIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { toast } from "sonner";
+import { Breakdowns } from "@/components/breakdowns";
+import { RealtimeWidget } from "@/components/realtime-widget";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +25,14 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ApiError, fetchOverview, logout, type OverviewData } from "@/lib/api";
+import {
+	ApiError,
+	type BreakdownData,
+	fetchBreakdowns,
+	fetchOverview,
+	logout,
+	type OverviewData,
+} from "@/lib/api";
 
 const SITES_KEY = "azoth_sites";
 const SITE_KEY = "azoth_site";
@@ -68,6 +77,7 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 	const [newSite, setNewSite] = useState("");
 	const [rangeKey, setRangeKey] = useState<string>(RANGES[1].label);
 	const [data, setData] = useState<OverviewData | null>(null);
+	const [breakdown, setBreakdown] = useState<BreakdownData | null>(null);
 	const [loading, setLoading] = useState(true);
 
 	const range = useMemo(
@@ -78,8 +88,12 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 	const refresh = useCallback(
 		async (site: string, from: number, to: number) => {
 			try {
-				const result = await fetchOverview(site, from, to);
-				setData(result);
+				const [overview, breakdowns] = await Promise.all([
+					fetchOverview(site, from, to),
+					fetchBreakdowns(site, from, to),
+				]);
+				setData(overview);
+				setBreakdown(breakdowns);
 				setLoading(false);
 			} catch (err) {
 				if (err instanceof ApiError && err.status === 401) {
@@ -97,6 +111,7 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 		if (siteId === "") {
 			setLoading(false);
 			setData(null);
+			setBreakdown(null);
 			return;
 		}
 		setLoading(true);
@@ -235,7 +250,7 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 				</Card>
 			) : (
 				<>
-					<div className="grid gap-4 sm:grid-cols-2">
+					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 						<Card>
 							<CardHeader>
 								<CardTitle>Pageviews</CardTitle>
@@ -256,6 +271,34 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 									{formatValue(data.uniques)}
 								</span>
 								<Badge variant="secondary">in range</Badge>
+							</CardContent>
+						</Card>
+						<Card>
+							<CardHeader>
+								<CardTitle>Bounce rate</CardTitle>
+							</CardHeader>
+							<CardContent className="flex items-baseline gap-2">
+								<span className="text-3xl font-semibold tracking-tight">
+									{breakdown === null
+										? "–"
+										: `${Math.round(breakdown.bounce.rate * 100)}%`}
+								</span>
+								<Badge variant="secondary">
+									{breakdown === null
+										? "loading"
+										: `${breakdown.bounce.bounces}/${breakdown.bounce.visitors} visitors`}
+								</Badge>
+							</CardContent>
+						</Card>
+						<Card>
+							<CardHeader>
+								<CardTitle>Realtime</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<RealtimeWidget
+									siteId={siteId}
+									onUnauthorized={onUnauthorized}
+								/>
 							</CardContent>
 						</Card>
 					</div>
@@ -292,6 +335,19 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 									/>
 								</AreaChart>
 							</ChartContainer>
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle>Breakdowns</CardTitle>
+						</CardHeader>
+						<CardContent>
+							{breakdown === null ? (
+								<Skeleton className="h-64" />
+							) : (
+								<Breakdowns data={breakdown} />
+							)}
 						</CardContent>
 					</Card>
 				</>

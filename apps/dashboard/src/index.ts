@@ -1,7 +1,12 @@
 import { authCookie, clearAuthCookie, isAuthorized } from "./auth";
 import {
+	bounceRate,
+	breakdown,
 	pageviewsOverTime,
 	type TimeBucket,
+	type TimeRange,
+	topPages,
+	topReferrers,
 	totalPageviews,
 	uniqueVisitors,
 } from "./queries";
@@ -27,6 +32,20 @@ function json(data: unknown, status = 200): Response {
 		headers: { "Content-Type": "application/json" },
 	});
 }
+
+function breakdownRows(
+	rows: Array<{
+		name?: string | number | null;
+		pageviews?: string | number | null;
+	}>,
+): Array<{ name: string; pageviews: number }> {
+	return rows.map((row) => ({
+		name: String(row.name ?? "unknown"),
+		pageviews: Number(row.pageviews ?? 0),
+	}));
+}
+
+const REALTIME_WINDOW_MS = 5 * 60 * 1000;
 
 export default {
 	async fetch(request: Request, env: Cloudflare.Env): Promise<Response> {
@@ -68,16 +87,39 @@ export default {
 			return json({ error: "invalid siteId" }, 400);
 		}
 
+		const queryEnv: QueryEnv = {
+			CF_ACCOUNT_ID: env.CF_ACCOUNT_ID,
+			CF_API_TOKEN: env.CF_API_TOKEN,
+		};
+
+		if (url.pathname === "/api/realtime") {
+			const to = Date.now();
+			const from = to - REALTIME_WINDOW_MS;
+			try {
+				const range: TimeRange = { siteId, from, to };
+				const [uniques, pageviews] = await Promise.all([
+					queryAnalytics(queryEnv, uniqueVisitors(range)),
+					queryAnalytics(queryEnv, totalPageviews(range)),
+				]);
+				return json({
+					windowMs: REALTIME_WINDOW_MS,
+					uniques: Number(uniques.data[0]?.uniques ?? 0),
+					pageviews: Number(pageviews.data[0]?.pageviews ?? 0),
+				});
+			} catch (error) {
+				const detail =
+					error instanceof QueryError
+						? { status: error.status, body: error.body }
+						: undefined;
+				return json({ error: "query failed", detail }, 500);
+			}
+		}
+
 		const from = parseTimestamp(url.searchParams.get("from"));
 		const to = parseTimestamp(url.searchParams.get("to"));
 		if (from === null || to === null || to <= from) {
 			return json({ error: "invalid time range" }, 400);
 		}
-
-		const queryEnv: QueryEnv = {
-			CF_ACCOUNT_ID: env.CF_ACCOUNT_ID,
-			CF_API_TOKEN: env.CF_API_TOKEN,
-		};
 
 		try {
 			switch (url.pathname) {
@@ -111,6 +153,40 @@ export default {
 					);
 					return json({
 						uniques: Number(result.data[0]?.uniques ?? 0),
+					});
+				}
+				case "/api/breakdown": {
+					const range: TimeRange = { siteId, from, to };
+					const [pages, referrers, browsers, oses, devices, countries, bounce] =
+						await Promise.all([
+							queryAnalytics(queryEnv, topPages(range)),
+							queryAnalytics(queryEnv, topReferrers(range)),
+							queryAnalytics(queryEnv, breakdown(range, "browser")),
+							queryAnalytics(queryEnv, breakdown(range, "os")),
+							queryAnalytics(queryEnv, breakdown(range, "deviceType")),
+							queryAnalytics(queryEnv, breakdown(range, "country")),
+							queryAnalytics(queryEnv, bounceRate(range)),
+						]);
+					const bounceRow = bounce.data[0] as
+						| {
+								bounces?: string | number | null;
+								visitors?: string | number | null;
+						  }
+						| undefined;
+					const visitors = Number(bounceRow?.visitors ?? 0);
+					const bounces = Number(bounceRow?.bounces ?? 0);
+					return json({
+						pages: breakdownRows(pages.data),
+						referrers: breakdownRows(referrers.data),
+						browsers: breakdownRows(browsers.data),
+						oses: breakdownRows(oses.data),
+						devices: breakdownRows(devices.data),
+						countries: breakdownRows(countries.data),
+						bounce: {
+							bounces,
+							visitors,
+							rate: visitors > 0 ? bounces / visitors : 0,
+						},
 					});
 				}
 				default:
