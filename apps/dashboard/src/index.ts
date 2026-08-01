@@ -5,7 +5,7 @@ import {
 	totalPageviews,
 	uniqueVisitors,
 } from "./queries";
-import { type QueryEnv, queryAnalytics } from "./query";
+import { type QueryEnv, QueryError, queryAnalytics } from "./query";
 
 const SITE_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -92,8 +92,12 @@ export default {
 				default:
 					return json({ error: "not found" }, 404);
 			}
-		} catch {
-			return json({ error: "query failed" }, 500);
+		} catch (error) {
+			const detail =
+				error instanceof QueryError
+					? { status: error.status, body: error.body }
+					: undefined;
+			return json({ error: "query failed", detail }, 500);
 		}
 	},
 } satisfies ExportedHandler<Cloudflare.Env>;

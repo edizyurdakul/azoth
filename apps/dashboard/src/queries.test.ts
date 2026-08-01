@@ -10,14 +10,12 @@ const range = {
 describe("pageviewsOverTime", () => {
 	test("buckets by hour with a time-filtered range", () => {
 		expect(pageviewsOverTime(range, "hour")).toBe(
-			"SELECT DATE_TRUNC('hour', double1) AS t, COUNT(*) AS pageviews FROM azoth WHERE index1 = 'site-1' AND double1 >= 1700000000000 AND double1 < 1700086400000 GROUP BY t ORDER BY t ASC",
+			"SELECT toStartOfInterval(toDateTime(toUInt32(double1 / 1000)), INTERVAL '1 HOUR') AS t, COUNT() AS pageviews FROM azoth WHERE index1 = 'site-1' AND double1 >= 1700000000000 AND double1 < 1700086400000 GROUP BY t ORDER BY t ASC",
 		);
 	});
 
 	test("buckets by day", () => {
-		expect(pageviewsOverTime(range, "day")).toContain(
-			"DATE_TRUNC('day', double1)",
-		);
+		expect(pageviewsOverTime(range, "day")).toContain("INTERVAL '1 DAY'");
 	});
 });
 
@@ -31,6 +29,6 @@ describe("uniqueVisitors", () => {
 
 describe("totalPageviews", () => {
 	test("counts all rows in range", () => {
-		expect(totalPageviews(range)).toContain("COUNT(*) AS pageviews");
+		expect(totalPageviews(range)).toContain("COUNT() AS pageviews");
 	});
 });
