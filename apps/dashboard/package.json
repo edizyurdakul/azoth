@@ -4,7 +4,7 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"deploy": "wrangler deploy",
+		"deploy": "bun run --filter '@azoth/dashboard-ui' build && wrangler deploy",
 		"test": "vitest run",
 		"typecheck": "tsc --noEmit"
 	},

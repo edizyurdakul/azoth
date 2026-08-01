@@ -1,6 +1,7 @@
 name = "dashboard"
 main = "src/index.ts"
 compatibility_date = "2026-08-01"
+assets = { directory = "./public" }
 
 [vars]
 CF_ACCOUNT_ID = "c75d227e3f15f7d99bb6a8a66fad5072"

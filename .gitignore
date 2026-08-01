@@ -6,6 +6,7 @@ out
 dist
 *.tgz
 apps/ingestion/public
+apps/dashboard/public
 
 # code coverage
 coverage

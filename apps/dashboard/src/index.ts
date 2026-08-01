@@ -6,7 +6,6 @@ import {
 	uniqueVisitors,
 } from "./queries";
 import { type QueryEnv, QueryError, queryAnalytics } from "./query";
-import { renderPage } from "./ui";
 
 const SITE_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -32,12 +31,6 @@ function json(data: unknown, status = 200): Response {
 export default {
 	async fetch(request: Request, env: Cloudflare.Env): Promise<Response> {
 		const url = new URL(request.url);
-
-		if (url.pathname === "/" && request.method === "GET") {
-			return new Response(renderPage(), {
-				headers: { "Content-Type": "text/html; charset=utf-8" },
-			});
-		}
 
 		if (url.pathname === "/api/login" && request.method === "POST") {
 			const secret = (await request.json().catch(() => null)) as {
