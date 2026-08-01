@@ -1,6 +1,6 @@
 {
 	"name": "@azoth/schema",
-	"module": "index.ts",
+	"module": "src/index.ts",
 	"type": "module",
 	"private": true,
 	"scripts": {

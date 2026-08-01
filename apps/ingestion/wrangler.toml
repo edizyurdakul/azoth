@@ -1,5 +1,5 @@
 name = "ingestion"
-main = "index.ts"
+main = "src/index.ts"
 compatibility_date = "2026-08-01"
 
 [analytics_engine_datasets]
