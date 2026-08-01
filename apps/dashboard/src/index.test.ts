@@ -134,4 +134,83 @@ describe("dashboard worker", () => {
 
 		expect(response.status).toBe(500);
 	});
+
+	test("serves the UI page at /", async () => {
+		const response = await worker.fetch(
+			new Request("https://dash.example.com/"),
+			testEnv,
+		);
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get("content-type")).toContain("text/html");
+		expect(await response.text()).toContain("Azoth");
+	});
+
+	test("login with correct secret sets the auth cookie", async () => {
+		const response = await worker.fetch(
+			new Request("https://dash.example.com/api/login", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ secret: "super-secret" }),
+			}),
+			testEnv,
+		);
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get("set-cookie")).toContain(
+			"azoth_auth=super-secret",
+		);
+	});
+
+	test("login with wrong secret returns 401 and no cookie", async () => {
+		const response = await worker.fetch(
+			new Request("https://dash.example.com/api/login", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ secret: "nope" }),
+			}),
+			testEnv,
+		);
+
+		expect(response.status).toBe(401);
+		expect(response.headers.get("set-cookie")).toBeNull();
+	});
+
+	test("login with missing secret returns 400", async () => {
+		const response = await worker.fetch(
+			new Request("https://dash.example.com/api/login", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({}),
+			}),
+			testEnv,
+		);
+
+		expect(response.status).toBe(400);
+	});
+
+	test("logout clears the auth cookie", async () => {
+		const response = await worker.fetch(
+			new Request("https://dash.example.com/api/logout", { method: "POST" }),
+			testEnv,
+		);
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get("set-cookie")).toContain("Max-Age=0");
+	});
+
+	test("accepts a valid auth cookie on an API route", async () => {
+		stubQuery([{ uniques: 4 }]);
+
+		const response = await worker.fetch(
+			new Request(
+				"https://dash.example.com/api/uniques?siteId=site-1&from=1000&to=2000",
+				{ headers: { Cookie: "azoth_auth=super-secret" } },
+			),
+			testEnv,
+		);
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ uniques: 4 });
+	});
 });

@@ -5,6 +5,7 @@ node_modules
 out
 dist
 *.tgz
+apps/ingestion/public
 
 # code coverage
 coverage

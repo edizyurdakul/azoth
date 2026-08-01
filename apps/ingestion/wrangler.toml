@@ -1,6 +1,7 @@
 name = "ingestion"
 main = "src/index.ts"
 compatibility_date = "2026-08-01"
+assets = { directory = "./public" }
 
 [[analytics_engine_datasets]]
 binding = "ANALYTICS"
