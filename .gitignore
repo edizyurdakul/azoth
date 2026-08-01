@@ -27,6 +27,10 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .env.production.local
 .env.local
 
+# wrangler local dev secrets
+.dev.vars
+apps/*/.dev.vars
+
 # caches
 .eslintcache
 .cache
