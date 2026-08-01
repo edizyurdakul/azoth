@@ -17,8 +17,13 @@
     },
     "apps/dashboard": {
       "name": "@azoth/dashboard",
+      "dependencies": {
+        "@azoth/schema": "workspace:*",
+      },
       "devDependencies": {
-        "@types/bun": "latest",
+        "@cloudflare/vitest-pool-workers": "^0.20.1",
+        "@cloudflare/workers-types": "^5.20260731.1",
+        "vitest": "^4.1",
         "wrangler": "^4.118.0",
       },
       "peerDependencies": {
