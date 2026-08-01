@@ -4,7 +4,8 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"deploy": "wrangler deploy",
+		"build:tracker": "bun run --filter '@azoth/tracker' build",
+		"deploy": "bun run build:tracker && wrangler deploy",
 		"test": "vitest run",
 		"typecheck": "tsc --noEmit"
 	},

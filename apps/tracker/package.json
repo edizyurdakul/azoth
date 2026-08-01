@@ -4,6 +4,7 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
+		"build": "bun build src/index.ts --outfile ../ingestion/public/tracker.min.js --minify --target=browser",
 		"test": "bun test --pass-with-no-tests",
 		"typecheck": "tsc --noEmit"
 	},

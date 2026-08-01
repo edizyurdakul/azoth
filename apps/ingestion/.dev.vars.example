@@ -1,0 +1,3 @@
+# Ingestion has no environment variables or secrets.
+# The ANALYTICS Engine dataset is configured via the binding in wrangler.toml.
+# This file exists for parity with the dashboard app.
