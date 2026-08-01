@@ -13,6 +13,18 @@ export const BLOB_FIELDS = [
 
 export const DOUBLE_FIELDS = ["timestamp"] as const;
 
+export function blobColumn(field: (typeof BLOB_FIELDS)[number]): string {
+	const index = BLOB_FIELDS.indexOf(field);
+	return `blob${index + 1}`;
+}
+
+export function doubleColumn(field: (typeof DOUBLE_FIELDS)[number]): string {
+	const index = DOUBLE_FIELDS.indexOf(field);
+	return `double${index + 1}`;
+}
+
+export const indexColumn = `index${1}`;
+
 export interface PageviewEvent {
 	siteId: string;
 	path: string;

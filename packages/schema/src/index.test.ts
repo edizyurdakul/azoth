@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
 	BLOB_FIELDS,
+	blobColumn,
 	DOUBLE_FIELDS,
+	doubleColumn,
 	INDEX_FIELD,
+	indexColumn,
 	type PageviewEvent,
 	toWriteDataPoint,
 } from "./index";
@@ -48,5 +51,18 @@ describe("@azoth/schema", () => {
 		expect(dp.indexes).toEqual([event.siteId]);
 		expect(dp.doubles).toEqual([event.timestamp]);
 		expect([...dp.blobs]).toEqual(BLOB_FIELDS.map((field) => event[field]));
+	});
+
+	test("blobColumn is 1-indexed by field order", () => {
+		expect(blobColumn("path")).toBe("blob1");
+		expect(blobColumn("visitorHash")).toBe(`blob${BLOB_FIELDS.length}`);
+	});
+
+	test("doubleColumn maps timestamp to double1", () => {
+		expect(doubleColumn("timestamp")).toBe("double1");
+	});
+
+	test("indexColumn is index1 for siteId", () => {
+		expect(indexColumn).toBe("index1");
 	});
 });
