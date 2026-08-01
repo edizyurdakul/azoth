@@ -1,4 +1,4 @@
-import { isAuthorized } from "./auth";
+import { authCookie, clearAuthCookie, isAuthorized } from "./auth";
 import {
 	pageviewsOverTime,
 	type TimeBucket,
@@ -6,6 +6,7 @@ import {
 	uniqueVisitors,
 } from "./queries";
 import { type QueryEnv, QueryError, queryAnalytics } from "./query";
+import { renderPage } from "./ui";
 
 const SITE_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -30,11 +31,41 @@ function json(data: unknown, status = 200): Response {
 
 export default {
 	async fetch(request: Request, env: Cloudflare.Env): Promise<Response> {
+		const url = new URL(request.url);
+
+		if (url.pathname === "/" && request.method === "GET") {
+			return new Response(renderPage(), {
+				headers: { "Content-Type": "text/html; charset=utf-8" },
+			});
+		}
+
+		if (url.pathname === "/api/login" && request.method === "POST") {
+			const secret = (await request.json().catch(() => null)) as {
+				secret?: unknown;
+			} | null;
+			if (typeof secret?.secret !== "string" || secret.secret === "") {
+				return json({ error: "missing secret" }, 400);
+			}
+			if (secret.secret !== env.AUTH_SECRET) {
+				return json({ error: "unauthorized" }, 401);
+			}
+			return new Response(null, {
+				status: 200,
+				headers: { "Set-Cookie": authCookie(env.AUTH_SECRET) },
+			});
+		}
+
+		if (url.pathname === "/api/logout" && request.method === "POST") {
+			return new Response(null, {
+				status: 200,
+				headers: { "Set-Cookie": clearAuthCookie() },
+			});
+		}
+
 		if (!isAuthorized(request, env)) {
 			return json({ error: "unauthorized" }, 401);
 		}
 
-		const url = new URL(request.url);
 		if (request.method !== "GET") {
 			return json({ error: "method not allowed" }, 405);
 		}

@@ -1,11 +1,17 @@
 # dashboard
 
-Read path for Azoth. Serves authenticated JSON endpoints backed by Cloudflare
-Analytics Engine's synchronous SQL API.
+Read path for Azoth. Serves a browser UI plus authenticated JSON endpoints
+backed by Cloudflare Analytics Engine's synchronous SQL API.
+
+## UI
+
+`GET /` serves the dashboard page (pageview total, unique visitors, trend line).
+Sign in with the `AUTH_SECRET` via the login form; the secret is exchanged for an
+HttpOnly `azoth_auth` cookie (`SameSite=Lax`, 30-day expiry). Log out clears it.
 
 ## Endpoints
 
-All endpoints require `Authorization: Bearer <AUTH_SECRET>`.
+Require `Authorization: Bearer <AUTH_SECRET>` **or** the `azoth_auth` cookie.
 
 - `GET /api/pageviews?siteId=<id>&from=<ms>&to=<ms>&bucket=<hour|day>`
   Pageview time series (bucket defaults to `day`).
@@ -14,6 +20,11 @@ All endpoints require `Authorization: Bearer <AUTH_SECRET>`.
 
 `from`/`to` are Unix milliseconds. `siteId` must match
 `^[A-Za-z0-9_-]{1,64}$`.
+
+Auth endpoints (no auth required):
+
+- `POST /api/login` — body `{ "secret": "<AUTH_SECRET>" }`; sets the `azoth_auth` cookie on success.
+- `POST /api/logout` — clears the `azoth_auth` cookie.
 
 ## Configuration
 
