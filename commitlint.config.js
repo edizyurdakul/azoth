@@ -9,6 +9,7 @@ export default {
 				"dashboard",
 				"dashboard-ui",
 				"tracker",
+				"cli",
 				"schema",
 				"ua-parser",
 				"repo",

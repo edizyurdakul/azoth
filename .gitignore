@@ -8,6 +8,9 @@ dist
 apps/ingestion/public
 apps/dashboard/public
 
+# azoth cli state
+.azoth
+
 # code coverage
 coverage
 *.lcov
