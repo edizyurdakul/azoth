@@ -13,3 +13,8 @@ pre-push:
   commands:
     test:
       run: bun run test
+
+commit-msg:
+  commands:
+    commitlint:
+      run: bunx commitlint --edit {1}
