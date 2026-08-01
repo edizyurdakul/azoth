@@ -1,6 +1,7 @@
 name = "ingestion"
-main = "index.ts"
+main = "src/index.ts"
 compatibility_date = "2026-08-01"
 
-[analytics_engine_datasets]
-ANALYTICS = "azoth"
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "azoth"

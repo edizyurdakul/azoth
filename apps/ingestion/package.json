@@ -1,6 +1,6 @@
 {
 	"name": "@azoth/ingestion",
-	"module": "index.ts",
+	"module": "src/index.ts",
 	"type": "module",
 	"private": true,
 	"scripts": {
@@ -9,7 +9,7 @@
 	},
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "^0.20.1",
-		"@types/bun": "latest",
+		"@cloudflare/workers-types": "^5.20260731.1",
 		"vitest": "^4.1",
 		"wrangler": "^4.118.0"
 	},
@@ -17,6 +17,7 @@
 		"typescript": "^5"
 	},
 	"dependencies": {
-		"@azoth/schema": "workspace:*"
+		"@azoth/schema": "workspace:*",
+		"@azoth/ua-parser": "workspace:*"
 	}
 }
