@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+	createSite,
+	deleteSite,
 	fetchBreakdowns,
 	fetchOverview,
 	fetchRealtime,
+	fetchSites,
 	login,
 	logout,
 } from "@/lib/api";
@@ -107,5 +110,55 @@ describe("api client", () => {
 
 		const result = await fetchRealtime("site-1");
 		expect(result).toEqual({ windowMs: 300000, uniques: 3, pageviews: 7 });
+	});
+
+	it("fetchSites parses the sites list", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () =>
+				jsonResponse({
+					sites: [
+						{ siteId: "a", name: "A", createdAt: "2026-08-01", snippet: "x" },
+					],
+				}),
+			),
+		);
+
+		const result = await fetchSites();
+		expect(result).toEqual([
+			{ siteId: "a", name: "A", createdAt: "2026-08-01", snippet: "x" },
+		]);
+	});
+
+	it("createSite posts the name and parses the snippet", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				expect(String(input)).toBe("/api/sites");
+				expect(init?.method).toBe("POST");
+				expect(init?.body).toBe(JSON.stringify({ name: "New" }));
+				return jsonResponse({
+					site: { siteId: "n1", name: "New", createdAt: "2026-08-01" },
+					snippet: "<script></script>",
+				});
+			}),
+		);
+
+		const result = await createSite("New");
+		expect(result.site.siteId).toBe("n1");
+		expect(result.snippet).toBe("<script></script>");
+	});
+
+	it("deleteSite issues a DELETE with the siteId", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				expect(String(input)).toBe("/api/sites?siteId=a1");
+				expect(init?.method).toBe("DELETE");
+				return jsonResponse({ ok: true });
+			}),
+		);
+
+		await expect(deleteSite("a1")).resolves.toBeUndefined();
 	});
 });

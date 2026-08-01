@@ -11,6 +11,13 @@ import {
 	uniqueVisitors,
 } from "./queries";
 import { type QueryEnv, QueryError, queryAnalytics } from "./query";
+import {
+	createSite,
+	deleteSite,
+	embedSnippet,
+	isWellFormedSiteId,
+	listSites,
+} from "./sites";
 
 const SITE_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -47,6 +54,59 @@ function breakdownRows(
 
 const REALTIME_WINDOW_MS = 5 * 60 * 1000;
 
+async function handleSites(
+	request: Request,
+	env: Cloudflare.Env,
+): Promise<Response> {
+	const url = new URL(request.url);
+
+	switch (request.method) {
+		case "GET": {
+			const sites = await listSites(env.SITES);
+			const ingestionUrl = env.INGESTION_URL ?? "";
+			return json({
+				sites: sites.map((site) => ({
+					...site,
+					snippet:
+						ingestionUrl === "" ? "" : embedSnippet(ingestionUrl, site.siteId),
+				})),
+			});
+		}
+		case "POST": {
+			const body = (await request.json().catch(() => null)) as {
+				name?: unknown;
+			} | null;
+			if (
+				body === null ||
+				typeof body.name !== "string" ||
+				body.name.trim() === ""
+			) {
+				return json({ error: "missing site name" }, 400);
+			}
+			const site = await createSite(env.SITES, body.name);
+			const ingestionUrl = env.INGESTION_URL ?? "";
+			return json({
+				site,
+				snippet:
+					ingestionUrl === "" ? "" : embedSnippet(ingestionUrl, site.siteId),
+			});
+		}
+		case "DELETE": {
+			const siteId = url.searchParams.get("siteId");
+			if (siteId === null || !isWellFormedSiteId(siteId)) {
+				return json({ error: "invalid siteId" }, 400);
+			}
+			const removed = await deleteSite(env.SITES, siteId);
+			if (!removed) {
+				return json({ error: "site not found" }, 404);
+			}
+			return json({ ok: true });
+		}
+		default:
+			return json({ error: "method not allowed" }, 405);
+	}
+}
+
 export default {
 	async fetch(request: Request, env: Cloudflare.Env): Promise<Response> {
 		const url = new URL(request.url);
@@ -76,6 +136,10 @@ export default {
 
 		if (!isAuthorized(request, env)) {
 			return json({ error: "unauthorized" }, 401);
+		}
+
+		if (url.pathname === "/api/sites") {
+			return handleSites(request, env);
 		}
 
 		if (request.method !== "GET") {

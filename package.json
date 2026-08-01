@@ -17,6 +17,7 @@
 		"test": "bun run --filter '@azoth/*' test"
 	},
 	"devDependencies": {
+		"@azoth/cli": "workspace:*",
 		"@biomejs/biome": "^2.5.6",
 		"@commitlint/cli": "^21.2.1",
 		"@commitlint/config-conventional": "^21.2.0",

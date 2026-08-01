@@ -3,5 +3,10 @@ main = "src/index.ts"
 compatibility_date = "2026-08-01"
 assets = { directory = "./public" }
 
+[[kv_namespaces]]
+binding = "SITES"
+id = "00000000000000000000000000000000"
+
 [vars]
 CF_ACCOUNT_ID = "c75d227e3f15f7d99bb6a8a66fad5072"
+INGESTION_URL = ""

@@ -2,12 +2,15 @@
 // (workerd semantics, not Bun's default runner) — see apps/dashboard/vitest.config.ts.
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import worker from "./index";
+import { makeMockKV } from "./test/kv";
 
 const AUTH = { Authorization: "Bearer super-secret" };
 const testEnv: Cloudflare.Env = {
 	CF_ACCOUNT_ID: "acc-1",
 	CF_API_TOKEN: "token-1",
 	AUTH_SECRET: "super-secret",
+	SITES: makeMockKV(),
+	INGESTION_URL: "https://ing.example.com",
 };
 
 function stubQuery(data: unknown[], rows = data.length) {
@@ -297,5 +300,113 @@ describe("dashboard worker", () => {
 
 		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual({ uniques: 4 });
+	});
+
+	test("lists sites for an authorized request", async () => {
+		const siteId = "site-1";
+		const kv = makeMockKV({
+			"site:site-1": JSON.stringify({
+				siteId,
+				name: "My Site",
+				createdAt: "2026-08-01T00:00:00.000Z",
+			}),
+		});
+		const env = { ...testEnv, SITES: kv };
+
+		const response = await worker.fetch(
+			new Request("https://dash.example.com/api/sites", { headers: AUTH }),
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		const body = (await response.json()) as {
+			sites: Array<{ siteId: string; name: string; snippet: string }>;
+		};
+		expect(body.sites).toHaveLength(1);
+		expect(body.sites[0]).toEqual({
+			siteId,
+			name: "My Site",
+			createdAt: "2026-08-01T00:00:00.000Z",
+			snippet:
+				'<script defer src="https://ing.example.com/tracker.min.js" data-site-id="site-1"></script>',
+		});
+	});
+
+	test("creates a site and returns its snippet", async () => {
+		const env = { ...testEnv, SITES: makeMockKV() };
+		const response = await worker.fetch(
+			new Request("https://dash.example.com/api/sites", {
+				method: "POST",
+				headers: { ...AUTH, "Content-Type": "application/json" },
+				body: JSON.stringify({ name: "New Site" }),
+			}),
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		const body = (await response.json()) as {
+			site: { siteId: string; name: string };
+			snippet: string;
+		};
+		expect(body.site.name).toBe("New Site");
+		expect(body.site.siteId).toMatch(/^[A-Za-z0-9_-]{1,64}$/);
+		expect(body.snippet).toContain(body.site.siteId);
+	});
+
+	test("rejects creating a site without a name", async () => {
+		const response = await worker.fetch(
+			new Request("https://dash.example.com/api/sites", {
+				method: "POST",
+				headers: { ...AUTH, "Content-Type": "application/json" },
+				body: JSON.stringify({}),
+			}),
+			testEnv,
+		);
+
+		expect(response.status).toBe(400);
+	});
+
+	test("deletes a site", async () => {
+		const siteId = "site-1";
+		const kv = makeMockKV({
+			"site:site-1": JSON.stringify({
+				siteId,
+				name: "My Site",
+				createdAt: "2026-08-01T00:00:00.000Z",
+			}),
+		});
+		const env = { ...testEnv, SITES: kv };
+
+		const response = await worker.fetch(
+			new Request(`https://dash.example.com/api/sites?siteId=${siteId}`, {
+				method: "DELETE",
+				headers: AUTH,
+			}),
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ ok: true });
+		expect(kv.store.has("site:site-1")).toBe(false);
+	});
+
+	test("returns 404 when deleting an unknown site", async () => {
+		const response = await worker.fetch(
+			new Request("https://dash.example.com/api/sites?siteId=nope", {
+				method: "DELETE",
+				headers: AUTH,
+			}),
+			testEnv,
+		);
+
+		expect(response.status).toBe(404);
+	});
+
+	test("requires auth for site management", async () => {
+		const response = await worker.fetch(
+			new Request("https://dash.example.com/api/sites"),
+			testEnv,
+		);
+		expect(response.status).toBe(401);
 	});
 });
