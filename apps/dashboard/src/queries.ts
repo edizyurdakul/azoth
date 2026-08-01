@@ -15,8 +15,8 @@ function rangeClause({ siteId, from, to }: TimeRange): string {
 }
 
 function bucketExpression(bucket: TimeBucket): string {
-	const interval = bucket === "day" ? "1 DAY" : "1 HOUR";
-	return `toStartOfInterval(toDateTime(toUInt32(${doubleColumn("timestamp")} / 1000)), INTERVAL '${interval}')`;
+	const unit = bucket === "day" ? "DAY" : "HOUR";
+	return `toStartOfInterval(toDateTime(toUInt32(${doubleColumn("timestamp")} / 1000)), INTERVAL '1' ${unit})`;
 }
 
 export function pageviewsOverTime(
