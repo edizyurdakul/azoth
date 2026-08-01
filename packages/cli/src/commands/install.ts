@@ -10,7 +10,11 @@ import {
 	writeState,
 	writeWranglerConfig,
 } from "../lib/config";
-import { checkHealth } from "../lib/health";
+import {
+	checkHealth,
+	type HealthCheck,
+	type HealthTargets,
+} from "../lib/health";
 import {
 	confirmStep,
 	intro,
@@ -30,6 +34,7 @@ export interface InstallOptions {
 	authSecret?: string;
 	apiToken?: string;
 	verbose?: boolean;
+	checkHealth?: (targets: HealthTargets) => Promise<HealthCheck[]>;
 }
 
 export interface InstallResult {
@@ -319,7 +324,8 @@ export async function runInstall(
 		result.dashboardUrl !== undefined &&
 		result.skipped.length === 0
 	) {
-		const checks = await checkHealth({
+		const health = opts.checkHealth ?? checkHealth;
+		const checks = await health({
 			ingestionUrl: result.ingestionUrl,
 			dashboardUrl: result.dashboardUrl,
 		});

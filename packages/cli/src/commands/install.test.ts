@@ -32,10 +32,6 @@ mock.module("../lib/prompts", () => ({
 	...require("../lib/prompts"),
 }));
 
-mock.module("../lib/health", () => ({
-	checkHealth: async () => [],
-}));
-
 import { CloudflareClient } from "../lib/cloudflare";
 import { runInstall } from "./install";
 
@@ -77,13 +73,20 @@ describe("runInstall", () => {
 		writeFixtures();
 	});
 
+	function opts(secret: string): Parameters<typeof runInstall>[1] {
+		return {
+			yes: true,
+			authSecret: secret,
+			apiToken: "tok",
+			checkHealth: async () => [],
+		};
+	}
+
 	it("dry-run writes and deploys nothing", async () => {
 		const { client } = fakeClient();
 		const result = await runInstall(client, {
+			...opts("a".repeat(64)),
 			dryRun: true,
-			yes: true,
-			authSecret: "a".repeat(64),
-			apiToken: "tok",
 		});
 		expect(result.deployed).toBe(false);
 		const read = (await Bun.file(dashConfig).text()) as string;
@@ -92,11 +95,7 @@ describe("runInstall", () => {
 
 	it("runs to completion non-interactively", async () => {
 		const { client } = fakeClient();
-		const result = await runInstall(client, {
-			yes: true,
-			authSecret: "b".repeat(64),
-			apiToken: "tok",
-		});
+		const result = await runInstall(client, opts("b".repeat(64)));
 		expect(result.deployed).toBe(true);
 		expect(result.ingestionUrl).toBe("https://ing.example.workers.dev");
 		expect(result.dashboardUrl).toBe("https://dash.example.workers.dev");
@@ -108,11 +107,7 @@ describe("runInstall", () => {
 
 	it("patches account_id into both configs", async () => {
 		const { client } = fakeClient();
-		await runInstall(client, {
-			yes: true,
-			authSecret: "c".repeat(64),
-			apiToken: "tok",
-		});
+		await runInstall(client, opts("c".repeat(64)));
 		expect((await Bun.file(dashConfig).text()) as string).toContain(
 			'account_id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"',
 		);
@@ -123,11 +118,7 @@ describe("runInstall", () => {
 
 	it("creates the SITES KV namespace and binds it in the dashboard config", async () => {
 		const { client, calls } = fakeClient();
-		await runInstall(client, {
-			yes: true,
-			authSecret: "d".repeat(64),
-			apiToken: "tok",
-		});
+		await runInstall(client, opts("d".repeat(64)));
 		expect(
 			calls.some((cmd) => cmd.includes("kv") && cmd.includes("namespace")),
 		).toBe(true);
@@ -138,11 +129,7 @@ describe("runInstall", () => {
 
 	it("patches INGESTION_URL into the dashboard config before deploy", async () => {
 		const { client } = fakeClient();
-		await runInstall(client, {
-			yes: true,
-			authSecret: "e".repeat(64),
-			apiToken: "tok",
-		});
+		await runInstall(client, opts("e".repeat(64)));
 		const dash = (await Bun.file(dashConfig).text()) as string;
 		expect(dash).toContain('INGESTION_URL = "https://ing.example.workers.dev"');
 	});
