@@ -60,6 +60,7 @@ describe("authCookie", () => {
 		expect(cookie).toContain("SameSite=Lax");
 		expect(cookie).toContain("Path=/");
 		expect(cookie).toContain("Max-Age=2592000");
+		expect(cookie).toContain("Secure");
 	});
 });
 
@@ -68,5 +69,6 @@ describe("clearAuthCookie", () => {
 		const cookie = clearAuthCookie();
 		expect(cookie).toContain("azoth_auth=");
 		expect(cookie).toContain("Max-Age=0");
+		expect(cookie).toContain("Secure");
 	});
 });

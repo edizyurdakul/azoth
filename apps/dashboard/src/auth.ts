@@ -35,9 +35,9 @@ export function isAuthorized(request: Request, env: AuthEnv): boolean {
 }
 
 export function authCookie(secret: string): string {
-	return `${AUTH_COOKIE}=${secret}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000`;
+	return `${AUTH_COOKIE}=${secret}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000; Secure`;
 }
 
 export function clearAuthCookie(): string {
-	return `${AUTH_COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`;
+	return `${AUTH_COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0; Secure`;
 }
