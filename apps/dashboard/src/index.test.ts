@@ -135,15 +135,13 @@ describe("dashboard worker", () => {
 		expect(response.status).toBe(500);
 	});
 
-	test("serves the UI page at /", async () => {
+	test("no longer serves the UI at / (served by Wrangler Assets)", async () => {
 		const response = await worker.fetch(
 			new Request("https://dash.example.com/"),
 			testEnv,
 		);
 
-		expect(response.status).toBe(200);
-		expect(response.headers.get("content-type")).toContain("text/html");
-		expect(await response.text()).toContain("Azoth");
+		expect(response.status).toBe(401);
 	});
 
 	test("login with correct secret sets the auth cookie", async () => {

@@ -4,7 +4,15 @@ export default {
 		"scope-enum": [
 			2,
 			"always",
-			["ingestion", "dashboard", "tracker", "schema", "ua-parser", "repo"],
+			[
+				"ingestion",
+				"dashboard",
+				"dashboard-ui",
+				"tracker",
+				"schema",
+				"ua-parser",
+				"repo",
+			],
 		],
 		"scope-empty": [2, "never"],
 	},
