@@ -63,8 +63,10 @@ describe("sites registry", () => {
 	});
 
 	test("embedSnippet points at the ingestion tracker", () => {
-		expect(embedSnippet("https://ing.example.com", "abc123")).toBe(
-			'<script defer src="https://ing.example.com/tracker.min.js" data-site-id="abc123"></script>',
+		expect(
+			embedSnippet("https://ingestion.edizyurdakul.workers.dev", "abc123"),
+		).toBe(
+			'<script defer src="https://ingestion.edizyurdakul.workers.dev/tracker.min.js" data-site-id="abc123"></script>',
 		);
 	});
 });

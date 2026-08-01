@@ -11,7 +11,7 @@ const ingConfig = join(tmp, "ingestion.toml");
 
 writeFileSync(
 	dashConfig,
-	`name = "dashboard"\nmain = "src/index.ts"\ncompatibility_date = "2026-08-01"\nassets = { directory = "./public" }\n\n[[kv_namespaces]]\nbinding = "SITES"\nid = "ffffffffffffffffffffffffffffffff"\n\n[vars]\nCF_ACCOUNT_ID = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"\nINGESTION_URL = "https://ing.example.workers.dev"\n`,
+	`name = "dashboard"\nmain = "src/index.ts"\ncompatibility_date = "2026-08-01"\nassets = { directory = "./public" }\n\n[[kv_namespaces]]\nbinding = "SITES"\nid = "ffffffffffffffffffffffffffffffff"\n\n[vars]\nCF_ACCOUNT_ID = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"\nINGESTION_URL = "https://ingestion.edizyurdakul.workers.dev"\n`,
 );
 writeFileSync(
 	ingConfig,

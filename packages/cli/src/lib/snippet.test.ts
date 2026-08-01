@@ -15,20 +15,20 @@ describe("auth", () => {
 
 describe("snippet", () => {
 	const params = {
-		ingestionUrl: "https://ing.example.workers.dev",
-		dashboardUrl: "https://dash.example.workers.dev",
+		ingestionUrl: "https://ingestion.edizyurdakul.workers.dev",
+		dashboardUrl: "https://dashboard.edizyurdakul.workers.dev",
 		siteId: "my-site",
 	};
 
 	it("builds the embed snippet with data-site-id", () => {
 		expect(embedSnippet(params)).toBe(
-			'<script defer src="https://ing.example.workers.dev/tracker.min.js" data-site-id="my-site"></script>',
+			'<script defer src="https://ingestion.edizyurdakul.workers.dev/tracker.min.js" data-site-id="my-site"></script>',
 		);
 	});
 
 	it("builds a test curl", () => {
 		expect(testCurl(params)).toBe(
-			"curl -X POST 'https://ing.example.workers.dev/collect?siteId=test&path=%2F'",
+			"curl -X POST 'https://ingestion.edizyurdakul.workers.dev/collect?siteId=test&path=%2F'",
 		);
 	});
 });

@@ -4,31 +4,31 @@ import { buildPageviewUrl, trackPageview } from "./lib";
 describe("buildPageviewUrl", () => {
 	test("builds /collect URL with siteId and path", () => {
 		const url = buildPageviewUrl({
-			base: "https://ingestion.example.workers.dev/tracker.min.js",
+			base: "https://ingestion.edizyurdakul.workers.dev/tracker.min.js",
 			siteId: "site-1",
 			path: "/blog/hello",
 			referrer: "",
 		});
 		expect(url).toBe(
-			"https://ingestion.example.workers.dev/collect?siteId=site-1&path=%2Fblog%2Fhello",
+			"https://ingestion.edizyurdakul.workers.dev/collect?siteId=site-1&path=%2Fblog%2Fhello",
 		);
 	});
 
 	test("includes referrer when present", () => {
 		const url = buildPageviewUrl({
-			base: "https://ingestion.example.workers.dev/tracker.min.js",
+			base: "https://ingestion.edizyurdakul.workers.dev/tracker.min.js",
 			siteId: "site-1",
 			path: "/",
 			referrer: "https://google.com",
 		});
 		expect(url).toBe(
-			"https://ingestion.example.workers.dev/collect?siteId=site-1&path=%2F&referrer=https%3A%2F%2Fgoogle.com",
+			"https://ingestion.edizyurdakul.workers.dev/collect?siteId=site-1&path=%2F&referrer=https%3A%2F%2Fgoogle.com",
 		);
 	});
 
 	test("omits referrer param when empty", () => {
 		const url = buildPageviewUrl({
-			base: "https://ingestion.example.workers.dev",
+			base: "https://ingestion.edizyurdakul.workers.dev",
 			siteId: "a",
 			path: "/",
 			referrer: "",
@@ -38,31 +38,31 @@ describe("buildPageviewUrl", () => {
 
 	test("encodes siteId and path", () => {
 		const url = buildPageviewUrl({
-			base: "https://ingestion.example.workers.dev",
+			base: "https://ingestion.edizyurdakul.workers.dev",
 			siteId: "a b",
 			path: "/search?q=1",
 			referrer: "",
 		});
 		expect(url).toBe(
-			"https://ingestion.example.workers.dev/collect?siteId=a+b&path=%2Fsearch%3Fq%3D1",
+			"https://ingestion.edizyurdakul.workers.dev/collect?siteId=a+b&path=%2Fsearch%3Fq%3D1",
 		);
 	});
 
 	test("sanitizes referrer to origin only", () => {
 		const url = buildPageviewUrl({
-			base: "https://ingestion.example.workers.dev",
+			base: "https://ingestion.edizyurdakul.workers.dev",
 			siteId: "site-1",
 			path: "/",
 			referrer: "https://google.com/search?q=azoth&utm_source=x",
 		});
 		expect(url).toBe(
-			"https://ingestion.example.workers.dev/collect?siteId=site-1&path=%2F&referrer=https%3A%2F%2Fgoogle.com",
+			"https://ingestion.edizyurdakul.workers.dev/collect?siteId=site-1&path=%2F&referrer=https%3A%2F%2Fgoogle.com",
 		);
 	});
 
 	test("omits referrer param when it is not a valid URL", () => {
 		const url = buildPageviewUrl({
-			base: "https://ingestion.example.workers.dev",
+			base: "https://ingestion.edizyurdakul.workers.dev",
 			siteId: "site-1",
 			path: "/",
 			referrer: "not-a-url",
@@ -88,7 +88,8 @@ function stubDom({
 } = {}) {
 	let sent = "";
 	const script = {
-		src: endpoint ?? "https://ingestion.example/tracker.min.js",
+		src:
+			endpoint ?? "https://ingestion.edizyurdakul.workers.dev/tracker.min.js",
 		getAttribute(name: string) {
 			if (name === "data-site-id") {
 				return siteId;
@@ -105,7 +106,7 @@ function stubDom({
 	(globalThis as Record<string, unknown>).document = {
 		currentScript: script,
 		referrer,
-		baseURI: "https://ingestion.example/",
+		baseURI: "https://ingestion.edizyurdakul.workers.dev/",
 	};
 	(globalThis as Record<string, unknown>).location = { pathname, search };
 	(globalThis as Record<string, unknown>).navigator = {
@@ -132,7 +133,7 @@ describe("trackPageview", () => {
 		});
 		trackPageview();
 		expect(sent()).toBe(
-			"https://ingestion.example/collect?siteId=site-1&path=%2Fblog%2Fhello&referrer=https%3A%2F%2Fgoogle.com",
+			"https://ingestion.edizyurdakul.workers.dev/collect?siteId=site-1&path=%2Fblog%2Fhello&referrer=https%3A%2F%2Fgoogle.com",
 		);
 	});
 
@@ -144,7 +145,7 @@ describe("trackPageview", () => {
 		});
 		trackPageview();
 		expect(sent()).toBe(
-			"https://ingestion.example/collect?siteId=site-1&path=%2Fblog%2Fhello%3Fq%3D1",
+			"https://ingestion.edizyurdakul.workers.dev/collect?siteId=site-1&path=%2Fblog%2Fhello%3Fq%3D1",
 		);
 	});
 });

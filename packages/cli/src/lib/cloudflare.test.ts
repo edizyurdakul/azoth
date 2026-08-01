@@ -66,13 +66,13 @@ describe("CloudflareClient", () => {
 				{
 					code: 0,
 					stdout:
-						"Uploaded dashboard (1.2s)\nhttps://dashboard.example.workers.dev\n",
+						"Uploaded dashboard (1.2s)\nhttps://dashboard.edizyurdakul.workers.dev\n",
 					stderr: "",
 				},
 			]),
 		);
 		const result = await client.deploy("/tmp/x/wrangler.toml");
-		expect(result.url).toBe("https://dashboard.example.workers.dev");
+		expect(result.url).toBe("https://dashboard.edizyurdakul.workers.dev");
 	});
 
 	it("deploy returns undefined URL when output has none", async () => {

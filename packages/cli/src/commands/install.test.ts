@@ -48,10 +48,12 @@ function fakeClient() {
 		if (cmd.includes("deploy")) {
 			const name =
 				cmd[cmd.length - 2] === "--config" ? cmd[cmd.length - 1] : "?";
-			const worker = (name ?? "").includes("ingestion") ? "ing" : "dash";
+			const url = (name ?? "").includes("ingestion")
+				? "https://ingestion.edizyurdakul.workers.dev"
+				: "https://dashboard.edizyurdakul.workers.dev";
 			return {
 				code: 0,
-				stdout: `Uploaded ${worker}\nhttps://${worker}.example.workers.dev\n`,
+				stdout: `Uploaded\n${url}\n`,
 				stderr: "",
 			};
 		}
@@ -97,8 +99,12 @@ describe("runInstall", () => {
 		const { client } = fakeClient();
 		const result = await runInstall(client, opts("b".repeat(64)));
 		expect(result.deployed).toBe(true);
-		expect(result.ingestionUrl).toBe("https://ing.example.workers.dev");
-		expect(result.dashboardUrl).toBe("https://dash.example.workers.dev");
+		expect(result.ingestionUrl).toBe(
+			"https://ingestion.edizyurdakul.workers.dev",
+		);
+		expect(result.dashboardUrl).toBe(
+			"https://dashboard.edizyurdakul.workers.dev",
+		);
 		const state = JSON.parse(await Bun.file(stateFile).text()) as {
 			accountId?: string;
 		};
@@ -131,6 +137,8 @@ describe("runInstall", () => {
 		const { client } = fakeClient();
 		await runInstall(client, opts("e".repeat(64)));
 		const dash = (await Bun.file(dashConfig).text()) as string;
-		expect(dash).toContain('INGESTION_URL = "https://ing.example.workers.dev"');
+		expect(dash).toContain(
+			'INGESTION_URL = "https://ingestion.edizyurdakul.workers.dev"',
+		);
 	});
 });

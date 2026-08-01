@@ -2,11 +2,12 @@ name = "dashboard"
 main = "src/index.ts"
 compatibility_date = "2026-08-01"
 assets = { directory = "./public" }
+account_id = "c75d227e3f15f7d99bb6a8a66fad5072"
 
 [[kv_namespaces]]
 binding = "SITES"
-id = "00000000000000000000000000000000"
+id = "d192a97acc2b4bb592c53788e105ad0f"
 
 [vars]
 CF_ACCOUNT_ID = "c75d227e3f15f7d99bb6a8a66fad5072"
-INGESTION_URL = ""
+INGESTION_URL = "https://ingestion.edizyurdakul.workers.dev"

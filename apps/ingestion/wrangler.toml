@@ -2,6 +2,7 @@ name = "ingestion"
 main = "src/index.ts"
 compatibility_date = "2026-08-01"
 assets = { directory = "./public" }
+account_id = "c75d227e3f15f7d99bb6a8a66fad5072"
 
 [[analytics_engine_datasets]]
 binding = "ANALYTICS"

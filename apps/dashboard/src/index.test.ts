@@ -10,7 +10,7 @@ const testEnv: Cloudflare.Env = {
 	CF_API_TOKEN: "token-1",
 	AUTH_SECRET: "super-secret",
 	SITES: makeMockKV(),
-	INGESTION_URL: "https://ing.example.com",
+	INGESTION_URL: "https://ingestion.edizyurdakul.workers.dev",
 };
 
 function stubQuery(data: unknown[], rows = data.length) {
@@ -42,7 +42,7 @@ describe("dashboard worker", () => {
 	test("requires authorization", async () => {
 		const response = await worker.fetch(
 			new Request(
-				"https://dash.example.com/api/pageviews?siteId=site-1&from=1000&to=2000",
+				"https://dashboard.edizyurdakul.workers.dev/api/pageviews?siteId=site-1&from=1000&to=2000",
 			),
 			testEnv,
 		);
@@ -55,7 +55,7 @@ describe("dashboard worker", () => {
 
 		const response = await worker.fetch(
 			new Request(
-				"https://dash.example.com/api/pageviews?siteId=site-1&from=1000&to=2000",
+				"https://dashboard.edizyurdakul.workers.dev/api/pageviews?siteId=site-1&from=1000&to=2000",
 				{ headers: AUTH },
 			),
 			testEnv,
@@ -73,7 +73,7 @@ describe("dashboard worker", () => {
 
 		const response = await worker.fetch(
 			new Request(
-				"https://dash.example.com/api/uniques?siteId=site-1&from=1000&to=2000",
+				"https://dashboard.edizyurdakul.workers.dev/api/uniques?siteId=site-1&from=1000&to=2000",
 				{ headers: AUTH },
 			),
 			testEnv,
@@ -93,7 +93,7 @@ describe("dashboard worker", () => {
 
 		const response = await worker.fetch(
 			new Request(
-				"https://dash.example.com/api/breakdown?siteId=site-1&from=1000&to=2000",
+				"https://dashboard.edizyurdakul.workers.dev/api/breakdown?siteId=site-1&from=1000&to=2000",
 				{ headers: AUTH },
 			),
 			testEnv,
@@ -117,7 +117,7 @@ describe("dashboard worker", () => {
 
 		const response = await worker.fetch(
 			new Request(
-				"https://dash.example.com/api/breakdown?siteId=site-1&from=1000&to=2000",
+				"https://dashboard.edizyurdakul.workers.dev/api/breakdown?siteId=site-1&from=1000&to=2000",
 				{ headers: AUTH },
 			),
 			testEnv,
@@ -141,9 +141,12 @@ describe("dashboard worker", () => {
 
 		try {
 			const response = await worker.fetch(
-				new Request("https://dash.example.com/api/realtime?siteId=site-1", {
-					headers: AUTH,
-				}),
+				new Request(
+					"https://dashboard.edizyurdakul.workers.dev/api/realtime?siteId=site-1",
+					{
+						headers: AUTH,
+					},
+				),
 				testEnv,
 			);
 
@@ -161,7 +164,7 @@ describe("dashboard worker", () => {
 	test("rejects a malformed siteId with 400", async () => {
 		const response = await worker.fetch(
 			new Request(
-				"https://dash.example.com/api/pageviews?siteId=bad%20id&from=1000&to=2000",
+				"https://dashboard.edizyurdakul.workers.dev/api/pageviews?siteId=bad%20id&from=1000&to=2000",
 				{ headers: AUTH },
 			),
 			testEnv,
@@ -173,7 +176,7 @@ describe("dashboard worker", () => {
 	test("rejects an invalid time range with 400", async () => {
 		const response = await worker.fetch(
 			new Request(
-				"https://dash.example.com/api/pageviews?siteId=site-1&from=2000&to=1000",
+				"https://dashboard.edizyurdakul.workers.dev/api/pageviews?siteId=site-1&from=2000&to=1000",
 				{ headers: AUTH },
 			),
 			testEnv,
@@ -185,7 +188,7 @@ describe("dashboard worker", () => {
 	test("rejects an invalid bucket with 400", async () => {
 		const response = await worker.fetch(
 			new Request(
-				"https://dash.example.com/api/pageviews?siteId=site-1&from=1000&to=2000&bucket=week",
+				"https://dashboard.edizyurdakul.workers.dev/api/pageviews?siteId=site-1&from=1000&to=2000&bucket=week",
 				{ headers: AUTH },
 			),
 			testEnv,
@@ -197,7 +200,7 @@ describe("dashboard worker", () => {
 	test("returns 404 for unknown paths", async () => {
 		const response = await worker.fetch(
 			new Request(
-				"https://dash.example.com/nope?siteId=site-1&from=1000&to=2000",
+				"https://dashboard.edizyurdakul.workers.dev/nope?siteId=site-1&from=1000&to=2000",
 				{ headers: AUTH },
 			),
 			testEnv,
@@ -216,7 +219,7 @@ describe("dashboard worker", () => {
 
 		const response = await worker.fetch(
 			new Request(
-				"https://dash.example.com/api/uniques?siteId=site-1&from=1000&to=2000",
+				"https://dashboard.edizyurdakul.workers.dev/api/uniques?siteId=site-1&from=1000&to=2000",
 				{ headers: AUTH },
 			),
 			testEnv,
@@ -227,7 +230,7 @@ describe("dashboard worker", () => {
 
 	test("no longer serves the UI at / (served by Wrangler Assets)", async () => {
 		const response = await worker.fetch(
-			new Request("https://dash.example.com/"),
+			new Request("https://dashboard.edizyurdakul.workers.dev/"),
 			testEnv,
 		);
 
@@ -236,7 +239,7 @@ describe("dashboard worker", () => {
 
 	test("login with correct secret sets the auth cookie", async () => {
 		const response = await worker.fetch(
-			new Request("https://dash.example.com/api/login", {
+			new Request("https://dashboard.edizyurdakul.workers.dev/api/login", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ secret: "super-secret" }),
@@ -252,7 +255,7 @@ describe("dashboard worker", () => {
 
 	test("login with wrong secret returns 401 and no cookie", async () => {
 		const response = await worker.fetch(
-			new Request("https://dash.example.com/api/login", {
+			new Request("https://dashboard.edizyurdakul.workers.dev/api/login", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ secret: "nope" }),
@@ -266,7 +269,7 @@ describe("dashboard worker", () => {
 
 	test("login with missing secret returns 400", async () => {
 		const response = await worker.fetch(
-			new Request("https://dash.example.com/api/login", {
+			new Request("https://dashboard.edizyurdakul.workers.dev/api/login", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({}),
@@ -279,7 +282,9 @@ describe("dashboard worker", () => {
 
 	test("logout clears the auth cookie", async () => {
 		const response = await worker.fetch(
-			new Request("https://dash.example.com/api/logout", { method: "POST" }),
+			new Request("https://dashboard.edizyurdakul.workers.dev/api/logout", {
+				method: "POST",
+			}),
 			testEnv,
 		);
 
@@ -292,7 +297,7 @@ describe("dashboard worker", () => {
 
 		const response = await worker.fetch(
 			new Request(
-				"https://dash.example.com/api/uniques?siteId=site-1&from=1000&to=2000",
+				"https://dashboard.edizyurdakul.workers.dev/api/uniques?siteId=site-1&from=1000&to=2000",
 				{ headers: { Cookie: "azoth_auth=super-secret" } },
 			),
 			testEnv,
@@ -314,7 +319,9 @@ describe("dashboard worker", () => {
 		const env = { ...testEnv, SITES: kv };
 
 		const response = await worker.fetch(
-			new Request("https://dash.example.com/api/sites", { headers: AUTH }),
+			new Request("https://dashboard.edizyurdakul.workers.dev/api/sites", {
+				headers: AUTH,
+			}),
 			env,
 		);
 
@@ -328,14 +335,14 @@ describe("dashboard worker", () => {
 			name: "My Site",
 			createdAt: "2026-08-01T00:00:00.000Z",
 			snippet:
-				'<script defer src="https://ing.example.com/tracker.min.js" data-site-id="site-1"></script>',
+				'<script defer src="https://ingestion.edizyurdakul.workers.dev/tracker.min.js" data-site-id="site-1"></script>',
 		});
 	});
 
 	test("creates a site and returns its snippet", async () => {
 		const env = { ...testEnv, SITES: makeMockKV() };
 		const response = await worker.fetch(
-			new Request("https://dash.example.com/api/sites", {
+			new Request("https://dashboard.edizyurdakul.workers.dev/api/sites", {
 				method: "POST",
 				headers: { ...AUTH, "Content-Type": "application/json" },
 				body: JSON.stringify({ name: "New Site" }),
@@ -355,7 +362,7 @@ describe("dashboard worker", () => {
 
 	test("rejects creating a site without a name", async () => {
 		const response = await worker.fetch(
-			new Request("https://dash.example.com/api/sites", {
+			new Request("https://dashboard.edizyurdakul.workers.dev/api/sites", {
 				method: "POST",
 				headers: { ...AUTH, "Content-Type": "application/json" },
 				body: JSON.stringify({}),
@@ -378,10 +385,13 @@ describe("dashboard worker", () => {
 		const env = { ...testEnv, SITES: kv };
 
 		const response = await worker.fetch(
-			new Request(`https://dash.example.com/api/sites?siteId=${siteId}`, {
-				method: "DELETE",
-				headers: AUTH,
-			}),
+			new Request(
+				`https://dashboard.edizyurdakul.workers.dev/api/sites?siteId=${siteId}`,
+				{
+					method: "DELETE",
+					headers: AUTH,
+				},
+			),
 			env,
 		);
 
@@ -392,10 +402,13 @@ describe("dashboard worker", () => {
 
 	test("returns 404 when deleting an unknown site", async () => {
 		const response = await worker.fetch(
-			new Request("https://dash.example.com/api/sites?siteId=nope", {
-				method: "DELETE",
-				headers: AUTH,
-			}),
+			new Request(
+				"https://dashboard.edizyurdakul.workers.dev/api/sites?siteId=nope",
+				{
+					method: "DELETE",
+					headers: AUTH,
+				},
+			),
 			testEnv,
 		);
 
@@ -404,7 +417,7 @@ describe("dashboard worker", () => {
 
 	test("requires auth for site management", async () => {
 		const response = await worker.fetch(
-			new Request("https://dash.example.com/api/sites"),
+			new Request("https://dashboard.edizyurdakul.workers.dev/api/sites"),
 			testEnv,
 		);
 		expect(response.status).toBe(401);
