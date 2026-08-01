@@ -1,9 +1,12 @@
+// @azoth/ingestion tests run under Vitest with @cloudflare/vitest-pool-workers
+// (workerd semantics, not Bun's default runner) — see apps/ingestion/vitest.config.ts.
 import { BLOB_FIELDS, DOUBLE_FIELDS, toWriteDataPoint } from "@azoth/schema";
-import { describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 import worker, {
 	buildPageview,
 	dateSalt,
 	hashVisitor,
+	isValidPath,
 	isValidSiteId,
 	reduceReferrer,
 } from "./index";
@@ -36,6 +39,19 @@ describe("reduceReferrer", () => {
 	test("returns empty string for empty or malformed input", () => {
 		expect(reduceReferrer("")).toBe("");
 		expect(reduceReferrer("not a url")).toBe("");
+	});
+});
+
+describe("isValidPath", () => {
+	test("accepts normal paths and the default", () => {
+		expect(isValidPath("/")).toBe(true);
+		expect(isValidPath("/blog/hello")).toBe(true);
+	});
+
+	test("rejects paths over 16 KiB in UTF-8 bytes", () => {
+		expect(isValidPath("/".repeat(16 * 1024))).toBe(true);
+		expect(isValidPath("x".repeat(16 * 1024 + 1))).toBe(false);
+		expect(isValidPath("é".repeat(16 * 1024))).toBe(false);
 	});
 });
 
@@ -127,6 +143,10 @@ describe("worker endpoint", () => {
 		},
 	};
 
+	beforeEach(() => {
+		written.length = 0;
+	});
+
 	test("collects a valid pageview and returns a CORS-enabled 200", async () => {
 		const response = await worker.fetch(
 			new Request("https://ingest.example.com/collect?siteId=site-1", {
@@ -161,6 +181,19 @@ describe("worker endpoint", () => {
 		);
 
 		expect(response.status).toBe(400);
+	});
+
+	test("rejects an oversized path with 400", async () => {
+		const response = await worker.fetch(
+			new Request(
+				`https://ingest.example.com/collect?siteId=site-1&path=${"x".repeat(16 * 1024 + 1)}`,
+				{ method: "POST" },
+			),
+			testEnv,
+		);
+
+		expect(response.status).toBe(400);
+		expect(written).toHaveLength(0);
 	});
 
 	test("rejects non-POST methods with 405", async () => {

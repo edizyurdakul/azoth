@@ -4,6 +4,8 @@ import type { IncomingRequestCfProperties } from "@cloudflare/workers-types";
 
 const SITE_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 
+const MAX_PATH_BYTES = 16 * 1024;
+
 const CORS_HEADERS = {
 	"Access-Control-Allow-Origin": "*",
 	"Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -13,6 +15,10 @@ const CORS_HEADERS = {
 
 export function isValidSiteId(siteId: string | null): siteId is string {
 	return siteId !== null && SITE_ID_PATTERN.test(siteId);
+}
+
+export function isValidPath(path: string): boolean {
+	return new TextEncoder().encode(path).byteLength <= MAX_PATH_BYTES;
 }
 
 export function reduceReferrer(referrer: string): string {
@@ -63,6 +69,9 @@ export async function buildPageview(
 	}
 
 	const path = url.searchParams.get("path") ?? "/";
+	if (!isValidPath(path)) {
+		return null;
+	}
 	const referrer = reduceReferrer(url.searchParams.get("referrer") ?? "");
 	const userAgent = request.headers.get("user-agent") ?? "";
 	const country = extractCountry(request.cf);
