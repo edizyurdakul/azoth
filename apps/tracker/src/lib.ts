@@ -14,15 +14,28 @@ export function buildPageviewUrl({
 	const url = new URL("/collect", base);
 	url.searchParams.set("siteId", siteId);
 	url.searchParams.set("path", path);
-	if (referrer !== "") {
-		url.searchParams.set("referrer", referrer);
+	const referrerOrigin = originOnly(referrer);
+	if (referrerOrigin !== "") {
+		url.searchParams.set("referrer", referrerOrigin);
 	}
 	return url.toString();
+}
+
+function originOnly(referrer: string): string {
+	if (referrer === "") {
+		return "";
+	}
+	try {
+		return new URL(referrer).origin;
+	} catch {
+		return "";
+	}
 }
 
 export interface TrackerConfig {
 	endpoint: string;
 	siteId: string;
+	trackSearch: boolean;
 }
 
 export function readConfig(): TrackerConfig | null {
@@ -36,7 +49,8 @@ export function readConfig(): TrackerConfig | null {
 	}
 	const endpoint =
 		current.getAttribute("data-endpoint") ?? current.src ?? document.baseURI;
-	return { endpoint, siteId };
+	const trackSearch = current.getAttribute("data-track-search") === "true";
+	return { endpoint, siteId, trackSearch };
 }
 
 export function trackPageview(): void {
@@ -47,7 +61,9 @@ export function trackPageview(): void {
 	const url = buildPageviewUrl({
 		base: config.endpoint,
 		siteId: config.siteId,
-		path: location.pathname + location.search,
+		path: config.trackSearch
+			? location.pathname + location.search
+			: location.pathname,
 		referrer: document.referrer,
 	});
 	if (navigator.sendBeacon(url)) {
