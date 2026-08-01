@@ -1,0 +1,6 @@
+# Cloudflare account ID for the Analytics Engine read API.
+CF_ACCOUNT_ID=your-account-id
+# API token with Analytics Engine read (query) permission.
+CF_API_TOKEN=your-api-token
+# Shared secret gate for the dashboard API (Authorization: Bearer <this>).
+AUTH_SECRET=change-me
