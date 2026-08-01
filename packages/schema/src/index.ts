@@ -26,25 +26,20 @@ export interface PageviewEvent {
 	timestamp: number;
 }
 
+type MapTuple<T extends readonly unknown[], U> = {
+	-readonly [K in keyof T]: U;
+};
+
 export interface WriteDataPoint {
 	indexes: [string];
-	blobs: [string, string, string, string, string, string, string, string];
+	blobs: MapTuple<typeof BLOB_FIELDS, string>;
 	doubles: [number];
 }
 
 export function toWriteDataPoint(event: PageviewEvent): WriteDataPoint {
 	return {
 		indexes: [event.siteId],
-		blobs: [
-			event.path,
-			event.referrer,
-			event.browser,
-			event.browserVersion,
-			event.os,
-			event.deviceType,
-			event.country,
-			event.visitorHash,
-		],
+		blobs: BLOB_FIELDS.map((field) => event[field]) as WriteDataPoint["blobs"],
 		doubles: [event.timestamp],
 	};
 }
