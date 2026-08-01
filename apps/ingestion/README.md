@@ -13,8 +13,8 @@ rejected over 16 KiB (UTF-8 bytes). CORS-enabled for the tracker snippet.
 ## Static assets
 
 `tracker.min.js` is served as a static asset from `./public/` (Wrangler Assets).
-Asset requests are served without invoking the Worker, so the `/collect` hot
-path stays cold. The bundle is built by `@azoth/tracker`:
+Asset requests are served without invoking the Worker. The bundle is built by
+`@azoth/tracker`:
 
 ```bash
 bun run build:tracker   # writes ../tracker build output to public/tracker.min.js
