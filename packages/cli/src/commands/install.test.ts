@@ -8,14 +8,17 @@ const dashConfig = join(tmp, "dashboard.toml");
 const ingConfig = join(tmp, "ingestion.toml");
 const stateFile = join(tmp, "state.json");
 
-writeFileSync(
-	dashConfig,
-	`name = "dashboard"\nmain = "src/index.ts"\ncompatibility_date = "2026-08-01"\nassets = { directory = "./public" }\n\n[vars]\nCF_ACCOUNT_ID = ""\n`,
-);
-writeFileSync(
-	ingConfig,
-	`name = "ingestion"\nmain = "src/index.ts"\ncompatibility_date = "2026-08-01"\nassets = { directory = "./public" }\n\n[[analytics_engine_datasets]]\nbinding = "ANALYTICS"\ndataset = "azoth"\n`,
-);
+function writeFixtures() {
+	writeFileSync(
+		dashConfig,
+		`name = "dashboard"\nmain = "src/index.ts"\ncompatibility_date = "2026-08-01"\nassets = { directory = "./public" }\n\n[vars]\nCF_ACCOUNT_ID = ""\n`,
+	);
+	writeFileSync(
+		ingConfig,
+		`name = "ingestion"\nmain = "src/index.ts"\ncompatibility_date = "2026-08-01"\nassets = { directory = "./public" }\n\n[[analytics_engine_datasets]]\nbinding = "ANALYTICS"\ndataset = "azoth"\n`,
+	);
+}
+writeFixtures();
 
 mock.module("../lib/config", () => ({
 	...require("../lib/config"),
@@ -27,10 +30,6 @@ mock.module("../lib/config", () => ({
 
 mock.module("../lib/prompts", () => ({
 	...require("../lib/prompts"),
-}));
-
-mock.module("../lib/health", () => ({
-	checkHealth: async () => [],
 }));
 
 import { CloudflareClient } from "../lib/cloudflare";
@@ -56,6 +55,13 @@ function fakeClient() {
 				stderr: "",
 			};
 		}
+		if (cmd.includes("kv") && cmd.includes("namespace")) {
+			return {
+				code: 0,
+				stdout: `📦 Created namespace with ID "ffffffffffffffffffffffffffffffff"`,
+				stderr: "",
+			};
+		}
 		return { code: 0, stdout: "ok", stderr: "" };
 	});
 	return { client: new CloudflareClient(run), calls };
@@ -64,15 +70,23 @@ function fakeClient() {
 describe("runInstall", () => {
 	beforeEach(() => {
 		mock.restore();
+		writeFixtures();
 	});
+
+	function opts(secret: string): Parameters<typeof runInstall>[1] {
+		return {
+			yes: true,
+			authSecret: secret,
+			apiToken: "tok",
+			checkHealth: async () => [],
+		};
+	}
 
 	it("dry-run writes and deploys nothing", async () => {
 		const { client } = fakeClient();
 		const result = await runInstall(client, {
+			...opts("a".repeat(64)),
 			dryRun: true,
-			yes: true,
-			authSecret: "a".repeat(64),
-			apiToken: "tok",
 		});
 		expect(result.deployed).toBe(false);
 		const read = (await Bun.file(dashConfig).text()) as string;
@@ -81,11 +95,7 @@ describe("runInstall", () => {
 
 	it("runs to completion non-interactively", async () => {
 		const { client } = fakeClient();
-		const result = await runInstall(client, {
-			yes: true,
-			authSecret: "b".repeat(64),
-			apiToken: "tok",
-		});
+		const result = await runInstall(client, opts("b".repeat(64)));
 		expect(result.deployed).toBe(true);
 		expect(result.ingestionUrl).toBe("https://ing.example.workers.dev");
 		expect(result.dashboardUrl).toBe("https://dash.example.workers.dev");
@@ -97,16 +107,30 @@ describe("runInstall", () => {
 
 	it("patches account_id into both configs", async () => {
 		const { client } = fakeClient();
-		await runInstall(client, {
-			yes: true,
-			authSecret: "c".repeat(64),
-			apiToken: "tok",
-		});
+		await runInstall(client, opts("c".repeat(64)));
 		expect((await Bun.file(dashConfig).text()) as string).toContain(
 			'account_id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"',
 		);
 		expect((await Bun.file(ingConfig).text()) as string).toContain(
 			'account_id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"',
 		);
+	});
+
+	it("creates the SITES KV namespace and binds it in the dashboard config", async () => {
+		const { client, calls } = fakeClient();
+		await runInstall(client, opts("d".repeat(64)));
+		expect(
+			calls.some((cmd) => cmd.includes("kv") && cmd.includes("namespace")),
+		).toBe(true);
+		const dash = (await Bun.file(dashConfig).text()) as string;
+		expect(dash).toContain('binding = "SITES"');
+		expect(dash).toContain('id = "ffffffffffffffffffffffffffffffff"');
+	});
+
+	it("patches INGESTION_URL into the dashboard config before deploy", async () => {
+		const { client } = fakeClient();
+		await runInstall(client, opts("e".repeat(64)));
+		const dash = (await Bun.file(dashConfig).text()) as string;
+		expect(dash).toContain('INGESTION_URL = "https://ing.example.workers.dev"');
 	});
 });

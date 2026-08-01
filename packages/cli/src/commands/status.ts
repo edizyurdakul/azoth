@@ -10,6 +10,7 @@ import {
 export interface StatusReport {
 	account?: { id?: string; name?: string };
 	workers: Array<{ name: string; config: string; deployed: boolean }>;
+	kv?: { namespace: string; bound: boolean };
 	secrets: Array<{ name: string; set: boolean | "unknown" }>;
 	state: {
 		ingestionUrl?: string;
@@ -47,6 +48,11 @@ export async function runStatus(args: {
 		deployed: ingConfig.account_id !== undefined,
 	});
 
+	const sitesKv = (dashConfig.kv_namespaces ?? []).find(
+		(b) => b.binding === "SITES",
+	);
+	const kvBound = sitesKv !== undefined && sitesKv.id !== "";
+
 	secrets.push({ name: "AUTH_SECRET", set: "unknown" });
 	secrets.push({ name: "CF_API_TOKEN", set: "unknown" });
 
@@ -55,6 +61,7 @@ export async function runStatus(args: {
 	const report: StatusReport = {
 		account,
 		workers,
+		kv: { namespace: "SITES", bound: kvBound },
 		secrets,
 		state,
 	};
@@ -72,6 +79,10 @@ export async function runStatus(args: {
 				`  ${w.name} — ${w.config} — ${w.deployed ? chalk.green("configured") : chalk.yellow("not configured")}`,
 			);
 		}
+		console.log(chalk.bold("\nBindings"));
+		console.log(
+			`  SITES KV — ${kvBound ? chalk.green("bound") : chalk.yellow("not bound (run azoth install)")}`,
+		);
 		console.log(chalk.bold("\nSecrets"));
 		for (const s of secrets) {
 			console.log(

@@ -12,6 +12,7 @@ export interface WranglerConfig {
 	vars?: Record<string, string>;
 	account_id?: string;
 	analytics_engine_datasets?: Array<Record<string, string>>;
+	kv_namespaces?: Array<{ binding: string; id: string }>;
 	[key: string]: unknown;
 }
 

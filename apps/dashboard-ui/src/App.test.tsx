@@ -2,7 +2,13 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "@/App";
-import { checkAuth, fetchBreakdowns, fetchOverview, login } from "@/lib/api";
+import {
+	checkAuth,
+	fetchBreakdowns,
+	fetchOverview,
+	fetchSites,
+	login,
+} from "@/lib/api";
 
 vi.mock("@/lib/api", () => ({
 	checkAuth: vi.fn(),
@@ -11,6 +17,9 @@ vi.mock("@/lib/api", () => ({
 	fetchOverview: vi.fn(),
 	fetchBreakdowns: vi.fn(),
 	fetchRealtime: vi.fn(),
+	fetchSites: vi.fn(),
+	createSite: vi.fn(),
+	deleteSite: vi.fn(),
 }));
 
 const mockCheckAuth = vi.mocked(checkAuth);
@@ -49,6 +58,7 @@ describe("App", () => {
 	it("logs in and shows the overview", async () => {
 		mockCheckAuth.mockResolvedValue(false);
 		mockLogin.mockResolvedValue(undefined);
+		vi.mocked(fetchSites).mockResolvedValue([]);
 		const mockFetchOverview = vi.mocked(fetchOverview);
 		const mockFetchBreakdowns = vi.mocked(fetchBreakdowns);
 		mockFetchOverview.mockResolvedValue({

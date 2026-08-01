@@ -1,4 +1,4 @@
-import { LogOutIcon, PlusIcon } from "lucide-react";
+import { CopyIcon, LogOutIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { toast } from "sonner";
@@ -28,13 +28,16 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	ApiError,
 	type BreakdownData,
+	createSite,
+	deleteSite,
 	fetchBreakdowns,
 	fetchOverview,
+	fetchSites,
 	logout,
 	type OverviewData,
+	type Site,
 } from "@/lib/api";
 
-const SITES_KEY = "azoth_sites";
 const SITE_KEY = "azoth_site";
 
 const RANGES = [
@@ -42,18 +45,6 @@ const RANGES = [
 	{ label: "30 days", days: 30 },
 	{ label: "90 days", days: 90 },
 ] as const;
-
-function loadSites(): string[] {
-	try {
-		const raw = localStorage.getItem(SITES_KEY);
-		const parsed: unknown = raw ? JSON.parse(raw) : null;
-		return Array.isArray(parsed)
-			? parsed.filter((site): site is string => typeof site === "string")
-			: [];
-	} catch {
-		return [];
-	}
-}
 
 function loadSelectedSite(): string {
 	return localStorage.getItem(SITE_KEY) ?? "";
@@ -72,9 +63,10 @@ function formatValue(value: number): string {
 }
 
 export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
-	const [sites, setSites] = useState<string[]>(() => loadSites());
+	const [sites, setSites] = useState<Site[]>([]);
 	const [siteId, setSiteId] = useState<string>(() => loadSelectedSite());
 	const [newSite, setNewSite] = useState("");
+	const [snippet, setSnippet] = useState("");
 	const [rangeKey, setRangeKey] = useState<string>(RANGES[1].label);
 	const [data, setData] = useState<OverviewData | null>(null);
 	const [breakdown, setBreakdown] = useState<BreakdownData | null>(null);
@@ -108,6 +100,32 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 	);
 
 	useEffect(() => {
+		let active = true;
+		void fetchSites()
+			.then((loaded) => {
+				if (!active) {
+					return;
+				}
+				setSites(loaded);
+				if (siteId === "") {
+					setSiteId(loaded[0]?.siteId ?? "");
+				}
+			})
+			.catch((err) => {
+				if (err instanceof ApiError && err.status === 401) {
+					onUnauthorized();
+				} else if (active) {
+					toast.error(
+						err instanceof Error ? err.message : "Failed to load sites",
+					);
+				}
+			});
+		return () => {
+			active = false;
+		};
+	}, [onUnauthorized, siteId]);
+
+	useEffect(() => {
 		if (siteId === "") {
 			setLoading(false);
 			setData(null);
@@ -121,21 +139,62 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 	}, [siteId, range, refresh]);
 
 	function handleAddSite() {
-		const site = newSite.trim();
-		if (site === "") {
+		const name = newSite.trim();
+		if (name === "") {
 			return;
 		}
-		const next = sites.includes(site) ? sites : [...sites, site];
-		setSites(next);
-		setSiteId(site);
-		setNewSite("");
-		localStorage.setItem(SITES_KEY, JSON.stringify(next));
-		localStorage.setItem(SITE_KEY, site);
+		void createSite(name)
+			.then(({ site, snippet: newSnippet }) => {
+				setSites((prev) => [...prev, site]);
+				setSiteId(site.siteId);
+				setSnippet(newSnippet ?? "");
+				setNewSite("");
+			})
+			.catch((err) => {
+				if (err instanceof ApiError && err.status === 401) {
+					onUnauthorized();
+				} else {
+					toast.error(
+						err instanceof Error ? err.message : "Failed to create site",
+					);
+				}
+			});
 	}
 
-	function handleSelectSite(value: string) {
+	async function handleSelectSite(value: string) {
 		setSiteId(value);
+		setSnippet(sites.find((s) => s.siteId === value)?.snippet ?? "");
 		localStorage.setItem(SITE_KEY, value);
+	}
+
+	async function handleDeleteSite() {
+		if (siteId === "") {
+			return;
+		}
+		try {
+			await deleteSite(siteId);
+			const next = sites.filter((s) => s.siteId !== siteId);
+			setSites(next);
+			setSnippet("");
+			const fallback = next[0]?.siteId ?? "";
+			setSiteId(fallback);
+			localStorage.setItem(SITE_KEY, fallback);
+		} catch (err) {
+			if (err instanceof ApiError && err.status === 401) {
+				onUnauthorized();
+			} else {
+				toast.error(
+					err instanceof Error ? err.message : "Failed to delete site",
+				);
+			}
+		}
+	}
+
+	function handleCopySnippet() {
+		void navigator.clipboard.writeText(snippet).then(
+			() => toast.success("Snippet copied"),
+			() => toast.error("Failed to copy snippet"),
+		);
 	}
 
 	async function handleLogout() {
@@ -182,8 +241,8 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 								<SelectContent>
 									<SelectGroup>
 										{sites.map((site) => (
-											<SelectItem key={site} value={site}>
-												{site}
+											<SelectItem key={site.siteId} value={site.siteId}>
+												{site.name}
 											</SelectItem>
 										))}
 									</SelectGroup>
@@ -200,6 +259,16 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 								className="w-48"
 								aria-label="Site ID"
 							/>
+						)}
+						{sites.length > 0 && (
+							<Button
+								variant="outline"
+								size="icon"
+								onClick={handleDeleteSite}
+								aria-label="Delete site"
+							>
+								<Trash2Icon data-icon="inline-start" />
+							</Button>
 						)}
 						<Input
 							value={newSite}
@@ -224,6 +293,24 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 						</Button>
 					</Field>
 				</FieldGroup>
+				{snippet !== "" && (
+					<Field>
+						<FieldLabel className="w-auto">Embed snippet</FieldLabel>
+						<div className="flex items-center gap-2">
+							<code className="flex-1 truncate rounded-md bg-muted px-3 py-2 font-mono text-xs">
+								{snippet}
+							</code>
+							<Button
+								variant="outline"
+								size="icon"
+								onClick={handleCopySnippet}
+								aria-label="Copy snippet"
+							>
+								<CopyIcon data-icon="inline-start" />
+							</Button>
+						</div>
+					</Field>
+				)}
 			</section>
 
 			<Tabs value={rangeKey} onValueChange={setRangeKey}>
