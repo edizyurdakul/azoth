@@ -38,6 +38,13 @@ export interface RealtimeData {
 	pageviews: number;
 }
 
+export interface Site {
+	siteId: string;
+	name: string;
+	createdAt: string;
+	snippet?: string;
+}
+
 export class ApiError extends Error {
 	status: number;
 
@@ -117,4 +124,33 @@ export async function fetchBreakdowns(
 export async function fetchRealtime(siteId: string): Promise<RealtimeData> {
 	const q = new URLSearchParams({ siteId });
 	return requestJson<RealtimeData>(`/api/realtime?${q}`);
+}
+
+export interface SitesResponse {
+	sites: Site[];
+}
+
+export async function fetchSites(): Promise<Site[]> {
+	const body = await requestJson<SitesResponse>("/api/sites");
+	return body.sites;
+}
+
+export interface CreateSiteResponse {
+	site: Site;
+	snippet?: string;
+}
+
+export async function createSite(name: string): Promise<CreateSiteResponse> {
+	return requestJson<CreateSiteResponse>("/api/sites", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ name }),
+	});
+}
+
+export async function deleteSite(siteId: string): Promise<void> {
+	await requestJson<{ ok: boolean }>(
+		`/api/sites?siteId=${encodeURIComponent(siteId)}`,
+		{ method: "DELETE" },
+	);
 }

@@ -117,6 +117,16 @@ export class CloudflareClient {
 		return { url, output: result.stdout };
 	}
 
+	async createKvNamespace(
+		binding: string,
+	): Promise<{ ok: boolean; id?: string; output: string }> {
+		const result = await this.run([
+			...this.wranglerArgs("kv", "namespace", "create", binding),
+		]);
+		const id = result.stdout.match(/[a-f0-9]{32}/i)?.[0];
+		return { ok: result.code === 0, id, output: result.stdout };
+	}
+
 	async setSecrets(
 		configPath: string,
 		secrets: Record<string, string>,

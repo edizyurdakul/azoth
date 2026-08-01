@@ -82,6 +82,28 @@ export async function runDoctor(args: {
 						"run `azoth install` to set it",
 					);
 				}
+				if (
+					config.vars?.INGESTION_URL === undefined ||
+					config.vars.INGESTION_URL === ""
+				) {
+					check(
+						report,
+						"INGESTION_URL var",
+						false,
+						"run `azoth install` to set it",
+					);
+				}
+				const sitesKv = (config.kv_namespaces ?? []).find(
+					(b) => b.binding === "SITES",
+				);
+				if (sitesKv === undefined || sitesKv.id === "") {
+					check(
+						report,
+						"SITES KV binding",
+						false,
+						"run `azoth install` to create it",
+					);
+				}
 			}
 			if (name === "ingestion config") {
 				const hasAe =

@@ -1,6 +1,28 @@
 import { describe, expect, it, mock } from "bun:test";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { CloudflareClient } from "../lib/cloudflare";
 import { runDoctor } from "./doctor";
+
+const tmp = mkdtempSync(join(tmpdir(), "azoth-cli-doctor-"));
+const dashConfig = join(tmp, "dashboard.toml");
+const ingConfig = join(tmp, "ingestion.toml");
+
+writeFileSync(
+	dashConfig,
+	`name = "dashboard"\nmain = "src/index.ts"\ncompatibility_date = "2026-08-01"\nassets = { directory = "./public" }\n\n[[kv_namespaces]]\nbinding = "SITES"\nid = "ffffffffffffffffffffffffffffffff"\n\n[vars]\nCF_ACCOUNT_ID = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"\nINGESTION_URL = "https://ing.example.workers.dev"\n`,
+);
+writeFileSync(
+	ingConfig,
+	`name = "ingestion"\nmain = "src/index.ts"\ncompatibility_date = "2026-08-01"\nassets = { directory = "./public" }\n\n[[analytics_engine_datasets]]\nbinding = "ANALYTICS"\ndataset = "azoth"\n`,
+);
+
+mock.module("../lib/config", () => ({
+	...require("../lib/config"),
+	DASHBOARD_CONFIG: dashConfig,
+	INGESTION_CONFIG: ingConfig,
+}));
 
 function fakeClient(stdout: string): CloudflareClient {
 	return new CloudflareClient(async () => ({ code: 0, stdout, stderr: "" }));

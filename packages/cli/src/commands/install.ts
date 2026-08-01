@@ -90,6 +90,60 @@ function patchAccount(
 	return next;
 }
 
+const SITES_KV_BINDING = "SITES";
+
+function patchSitesKv(
+	config: WranglerConfig,
+	namespaceId: string,
+): WranglerConfig {
+	const next = { ...config };
+	const bindings = (next.kv_namespaces ?? []).filter(
+		(b) => b.binding !== SITES_KV_BINDING,
+	);
+	bindings.push({ binding: SITES_KV_BINDING, id: namespaceId });
+	next.kv_namespaces = bindings;
+	return next;
+}
+
+function patchIngestionUrl(
+	config: WranglerConfig,
+	ingestionUrl: string,
+): WranglerConfig {
+	const next = { ...config };
+	next.vars = { ...(next.vars ?? {}), INGESTION_URL: ingestionUrl };
+	return next;
+}
+
+function hasSitesKv(config: WranglerConfig): boolean {
+	return (
+		(config.kv_namespaces ?? []).some(
+			(b) => b.binding === SITES_KV_BINDING && b.id !== "",
+		) ?? false
+	);
+}
+
+async function ensureSitesKv(
+	cloudflare: CloudflareClient,
+	config: WranglerConfig,
+	opts: InstallOptions,
+): Promise<{ ok: boolean; id?: string; output: string }> {
+	if (hasSitesKv(config)) {
+		const existing = (config.kv_namespaces ?? []).find(
+			(b) => b.binding === SITES_KV_BINDING,
+		);
+		return {
+			ok: true,
+			id: existing?.id,
+			output: "SITES KV binding already set",
+		};
+	}
+	const created = await cloudflare.createKvNamespace(SITES_KV_BINDING);
+	if (opts.verbose && !created.ok) {
+		console.log(chalk.yellow(created.output.trim()));
+	}
+	return created;
+}
+
 async function resolveApiToken(
 	cloudflare: CloudflareClient,
 	opts: InstallOptions,
@@ -159,12 +213,26 @@ export async function runInstall(
 		}
 	}
 
-	const patchedDash = patchAccount(dash, account.id, true);
+	const kv = await ensureSitesKv(cloudflare, dash, opts);
+	if (!kv.ok || kv.id === undefined) {
+		result.skipped.push(
+			"SITES KV namespace (create failed, run azoth install again)",
+		);
+	}
+
+	const patchedDash = patchSitesKv(
+		patchAccount(dash, account.id, true),
+		kv.id ?? "",
+	);
 	const patchedIng = patchAccount(ing, account.id, false);
 	writeWranglerConfig(DASHBOARD_CONFIG, patchedDash);
 	writeWranglerConfig(INGESTION_CONFIG, patchedIng);
 	if (opts.verbose) {
-		console.log(chalk.dim("patched account_id into both wrangler.toml files"));
+		console.log(
+			chalk.dim(
+				"patched account_id + SITES KV binding into wrangler.toml files",
+			),
+		);
 	}
 
 	const secrets: Record<string, string> = {};
@@ -221,6 +289,17 @@ export async function runInstall(
 		result.skipped.push("ingestion deploy");
 	} else if (opts.verbose) {
 		console.log(chalk.dim(`ingestion: ${ingResult.url}`));
+	}
+
+	if (ingResult.url !== undefined) {
+		const withUrl = patchIngestionUrl(
+			readWranglerConfig(DASHBOARD_CONFIG),
+			ingResult.url,
+		);
+		writeWranglerConfig(DASHBOARD_CONFIG, withUrl);
+		if (opts.verbose) {
+			console.log(chalk.dim(`patched INGESTION_URL into dashboard config`));
+		}
 	}
 
 	const dashResult = await cloudflare.deploy(DASHBOARD_CONFIG);
