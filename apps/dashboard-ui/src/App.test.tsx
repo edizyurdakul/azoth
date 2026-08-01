@@ -2,13 +2,15 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "@/App";
-import { checkAuth, login } from "@/lib/api";
+import { checkAuth, fetchBreakdowns, fetchOverview, login } from "@/lib/api";
 
 vi.mock("@/lib/api", () => ({
 	checkAuth: vi.fn(),
 	login: vi.fn(),
 	logout: vi.fn(),
 	fetchOverview: vi.fn(),
+	fetchBreakdowns: vi.fn(),
+	fetchRealtime: vi.fn(),
 }));
 
 const mockCheckAuth = vi.mocked(checkAuth);
@@ -47,6 +49,22 @@ describe("App", () => {
 	it("logs in and shows the overview", async () => {
 		mockCheckAuth.mockResolvedValue(false);
 		mockLogin.mockResolvedValue(undefined);
+		const mockFetchOverview = vi.mocked(fetchOverview);
+		const mockFetchBreakdowns = vi.mocked(fetchBreakdowns);
+		mockFetchOverview.mockResolvedValue({
+			series: [{ t: "2026-08-01", pageviews: 10 }],
+			pageviews: 10,
+			uniques: 4,
+		});
+		mockFetchBreakdowns.mockResolvedValue({
+			pages: [],
+			referrers: [],
+			browsers: [],
+			oses: [],
+			devices: [],
+			countries: [],
+			bounce: { bounces: 0, visitors: 0, rate: 0 },
+		});
 		render(<App />);
 
 		const secret = await screen.findByLabelText("Secret");

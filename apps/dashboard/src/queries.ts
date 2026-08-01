@@ -33,3 +33,27 @@ export function uniqueVisitors(range: TimeRange): string {
 export function totalPageviews(range: TimeRange): string {
 	return `SELECT COUNT() AS pageviews FROM ${DATASET} WHERE ${rangeClause(range)}`;
 }
+
+const BREAKDOWN_FIELDS = ["browser", "os", "deviceType", "country"] as const;
+
+export type BreakdownField = (typeof BREAKDOWN_FIELDS)[number];
+
+export function topPages(range: TimeRange, limit = 10): string {
+	return `SELECT ${blobColumn("path")} AS name, COUNT() AS pageviews FROM ${DATASET} WHERE ${rangeClause(range)} GROUP BY name ORDER BY pageviews DESC LIMIT ${limit}`;
+}
+
+export function topReferrers(range: TimeRange, limit = 10): string {
+	return `SELECT ${blobColumn("referrer")} AS name, COUNT() AS pageviews FROM ${DATASET} WHERE ${rangeClause(range)} AND ${blobColumn("referrer")} != '' GROUP BY name ORDER BY pageviews DESC LIMIT ${limit}`;
+}
+
+export function breakdown(
+	range: TimeRange,
+	field: BreakdownField,
+	limit = 10,
+): string {
+	return `SELECT ${blobColumn(field)} AS name, COUNT() AS pageviews FROM ${DATASET} WHERE ${rangeClause(range)} AND ${blobColumn(field)} != '' GROUP BY name ORDER BY pageviews DESC LIMIT ${limit}`;
+}
+
+export function bounceRate(range: TimeRange): string {
+	return `SELECT countIf(cnt = 1) AS bounces, COUNT() AS visitors FROM (SELECT COUNT() AS cnt FROM ${DATASET} WHERE ${rangeClause(range)} GROUP BY ${blobColumn("visitorHash")})`;
+}

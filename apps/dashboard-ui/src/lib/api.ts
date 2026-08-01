@@ -13,6 +13,31 @@ export interface OverviewData {
 	uniques: number;
 }
 
+export interface BreakdownItem {
+	name: string;
+	pageviews: number;
+}
+
+export interface BreakdownData {
+	pages: BreakdownItem[];
+	referrers: BreakdownItem[];
+	browsers: BreakdownItem[];
+	oses: BreakdownItem[];
+	devices: BreakdownItem[];
+	countries: BreakdownItem[];
+	bounce: {
+		bounces: number;
+		visitors: number;
+		rate: number;
+	};
+}
+
+export interface RealtimeData {
+	windowMs: number;
+	uniques: number;
+	pageviews: number;
+}
+
 export class ApiError extends Error {
 	status: number;
 
@@ -78,4 +103,18 @@ export async function fetchOverview(
 		pageviews: pv.total,
 		uniques: uniq.uniques,
 	};
+}
+
+export async function fetchBreakdowns(
+	siteId: string,
+	from: number,
+	to: number,
+): Promise<BreakdownData> {
+	const q = new URLSearchParams({ siteId, from: String(from), to: String(to) });
+	return requestJson<BreakdownData>(`/api/breakdown?${q}`);
+}
+
+export async function fetchRealtime(siteId: string): Promise<RealtimeData> {
+	const q = new URLSearchParams({ siteId });
+	return requestJson<RealtimeData>(`/api/realtime?${q}`);
 }
