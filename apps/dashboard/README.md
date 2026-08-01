@@ -17,11 +17,36 @@ All endpoints require `Authorization: Bearer <AUTH_SECRET>`.
 
 ## Configuration
 
+`CF_ACCOUNT_ID` is set as a plaintext `[vars]` in `wrangler.toml` (not sensitive).
 Secrets (set via `wrangler secret put <NAME>` or `.dev.vars` locally):
 
-- `CF_ACCOUNT_ID` — Cloudflare account for the AE read API.
 - `CF_API_TOKEN` — token with AE query permission.
 - `AUTH_SECRET` — shared secret; see `src/auth.ts` (swapped for real auth in Epic E).
+
+## Deploy
+
+The dashboard reads Analytics Engine, so the **ingestion Worker must be deployed
+and have written at least one event first** (the `azoth` dataset auto-creates on
+first write). Order matters.
+
+```bash
+# 1. auth (one-time)
+bunx wrangler login
+
+# 2. secrets
+echo "$CF_API_TOKEN" | bunx wrangler secret put CF_API_TOKEN
+echo "$AUTH_SECRET"  | bunx wrangler secret put AUTH_SECRET
+
+# 3. deploy (from apps/dashboard)
+bun run deploy
+```
+
+AE is eventually consistent; wait ~30s after writing before querying. Verify:
+
+```bash
+curl -H "Authorization: Bearer $AUTH_SECRET" \
+  "https://<dashboard>.workers.dev/api/pageviews?siteId=<id>&from=<ms>&to=<ms>"
+```
 
 ## Local dev
 
