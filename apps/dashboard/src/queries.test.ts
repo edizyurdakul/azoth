@@ -2,9 +2,11 @@ import { describe, expect, test } from "vitest";
 import {
 	bounceRate,
 	breakdown,
+	eventsOverTime,
 	pageviewsOverTime,
 	topPages,
 	topReferrers,
+	totalEvents,
 	totalPageviews,
 	uniqueVisitors,
 } from "./queries";
@@ -75,6 +77,23 @@ describe("bounceRate", () => {
 	test("counts visitors appearing exactly once via subquery + countIf", () => {
 		expect(bounceRate(range)).toBe(
 			"SELECT countIf(cnt = 1) AS bounces, COUNT() AS visitors FROM (SELECT COUNT() AS cnt FROM azoth WHERE index1 = 'site-1' AND double1 >= 1700000000000 AND double1 < 1700086400000 GROUP BY blob8)",
+		);
+	});
+});
+
+describe("account-level usage queries", () => {
+	const accountRange = { from: 1_700_000_000_000, to: 1_700_086_400_000 };
+
+	test("counts all events across sites (no siteId filter)", () => {
+		expect(totalEvents(accountRange)).toBe(
+			"SELECT COUNT() AS events FROM azoth WHERE double1 >= 1700000000000 AND double1 < 1700086400000",
+		);
+	});
+
+	test("buckets events by day", () => {
+		expect(eventsOverTime(accountRange, "day")).toContain("INTERVAL '1' DAY");
+		expect(eventsOverTime(accountRange, "day")).toContain(
+			"SELECT toStartOfInterval(toDateTime(toUInt32(double1 / 1000)), INTERVAL '1' DAY) AS t, COUNT() AS events",
 		);
 	});
 });

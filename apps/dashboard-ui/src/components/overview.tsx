@@ -36,9 +36,11 @@ import {
 	fetchBreakdowns,
 	fetchOverview,
 	fetchSites,
+	fetchUsage,
 	logout,
 	type OverviewData,
 	type Site,
+	type UsageData,
 } from "@/lib/api";
 
 const SITE_KEY = "azoth_site";
@@ -75,6 +77,7 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 	const [customRange, setCustomRange] = useState<DateRange | undefined>();
 	const [data, setData] = useState<OverviewData | null>(null);
 	const [breakdown, setBreakdown] = useState<BreakdownData | null>(null);
+	const [usage, setUsage] = useState<UsageData | null>(null);
 	const [loading, setLoading] = useState(true);
 
 	const range = useMemo(
@@ -151,12 +154,20 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 			setLoading(false);
 			setData(null);
 			setBreakdown(null);
+			setUsage(null);
 			return;
 		}
 		setLoading(true);
 		const { from, to } = fromTo;
 		void refresh(siteId, from, to);
-	}, [siteId, fromTo, refresh]);
+		void fetchUsage(from, to)
+			.then(setUsage)
+			.catch((err) => {
+				if (err instanceof ApiError && err.status === 401) {
+					onUnauthorized();
+				}
+			});
+	}, [siteId, fromTo, refresh, onUnauthorized]);
 
 	function handleAddSite() {
 		const name = newSite.trim();
@@ -416,6 +427,18 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 							</CardContent>
 						</Card>
 					</div>
+
+					<Card>
+						<CardHeader>
+							<CardTitle>Analytics Engine usage</CardTitle>
+						</CardHeader>
+						<CardContent className="flex items-baseline gap-2">
+							<span className="text-3xl font-semibold tracking-tight">
+								{usage === null ? "–" : formatValue(usage.total)}
+							</span>
+							<Badge variant="secondary">events in range (all sites)</Badge>
+						</CardContent>
+					</Card>
 
 					<Card>
 						<CardHeader>

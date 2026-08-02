@@ -38,6 +38,11 @@ export interface RealtimeData {
 	pageviews: number;
 }
 
+export interface UsageData {
+	total: number;
+	series: Array<{ t: string | number; events: number }>;
+}
+
 export interface Site {
 	siteId: string;
 	name: string;
@@ -124,6 +129,11 @@ export async function fetchBreakdowns(
 export async function fetchRealtime(siteId: string): Promise<RealtimeData> {
 	const q = new URLSearchParams({ siteId });
 	return requestJson<RealtimeData>(`/api/realtime?${q}`);
+}
+
+export async function fetchUsage(from: number, to: number): Promise<UsageData> {
+	const q = new URLSearchParams({ from: String(from), to: String(to) });
+	return requestJson<UsageData>(`/api/usage?${q}`);
 }
 
 export interface SitesResponse {

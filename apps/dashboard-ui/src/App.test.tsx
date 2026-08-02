@@ -7,6 +7,7 @@ import {
 	fetchBreakdowns,
 	fetchOverview,
 	fetchSites,
+	fetchUsage,
 	login,
 } from "@/lib/api";
 
@@ -17,6 +18,7 @@ vi.mock("@/lib/api", () => ({
 	fetchOverview: vi.fn(),
 	fetchBreakdowns: vi.fn(),
 	fetchRealtime: vi.fn(),
+	fetchUsage: vi.fn(),
 	fetchSites: vi.fn(),
 	createSite: vi.fn(),
 	deleteSite: vi.fn(),
@@ -74,6 +76,10 @@ describe("App", () => {
 			devices: [],
 			countries: [],
 			bounce: { bounces: 0, visitors: 0, rate: 0 },
+		});
+		vi.mocked(fetchUsage).mockResolvedValue({
+			total: 42,
+			series: [{ t: "2026-08-01", events: 42 }],
 		});
 		render(<App />);
 

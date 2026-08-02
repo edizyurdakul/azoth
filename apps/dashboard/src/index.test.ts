@@ -161,6 +161,41 @@ describe("dashboard worker", () => {
 		}
 	});
 
+	test("returns account-level AE usage without a siteId", async () => {
+		stubQueriesByBody((sql) => {
+			if (sql.includes("GROUP BY t")) {
+				return [{ t: "2026-08-01", events: 3 }];
+			}
+			return [{ events: 5 }];
+		});
+
+		const response = await worker.fetch(
+			new Request(
+				"https://dashboard.edizyurdakul.workers.dev/api/usage?from=1000&to=2000",
+				{ headers: AUTH },
+			),
+			testEnv,
+		);
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({
+			total: 5,
+			series: [{ t: "2026-08-01", events: 3 }],
+		});
+	});
+
+	test("rejects usage without a valid time range", async () => {
+		const response = await worker.fetch(
+			new Request(
+				"https://dashboard.edizyurdakul.workers.dev/api/usage?from=2000&to=1000",
+				{ headers: AUTH },
+			),
+			testEnv,
+		);
+
+		expect(response.status).toBe(400);
+	});
+
 	test("rejects a malformed siteId with 400", async () => {
 		const response = await worker.fetch(
 			new Request(

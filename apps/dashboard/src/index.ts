@@ -2,11 +2,13 @@ import { authCookie, clearAuthCookie, isAuthorized } from "./auth";
 import {
 	bounceRate,
 	breakdown,
+	eventsOverTime,
 	pageviewsOverTime,
 	type TimeBucket,
 	type TimeRange,
 	topPages,
 	topReferrers,
+	totalEvents,
 	totalPageviews,
 	uniqueVisitors,
 } from "./queries";
@@ -146,15 +148,39 @@ export default {
 			return json({ error: "method not allowed" }, 405);
 		}
 
-		const siteId = url.searchParams.get("siteId");
-		if (!isValidSiteId(siteId)) {
-			return json({ error: "invalid siteId" }, 400);
-		}
-
 		const queryEnv: QueryEnv = {
 			CF_ACCOUNT_ID: env.CF_ACCOUNT_ID,
 			CF_API_TOKEN: env.CF_API_TOKEN,
 		};
+
+		if (url.pathname === "/api/usage") {
+			const from = parseTimestamp(url.searchParams.get("from"));
+			const to = parseTimestamp(url.searchParams.get("to"));
+			if (from === null || to === null || to <= from) {
+				return json({ error: "invalid time range" }, 400);
+			}
+			try {
+				const [total, series] = await Promise.all([
+					queryAnalytics(queryEnv, totalEvents({ from, to })),
+					queryAnalytics(queryEnv, eventsOverTime({ from, to }, "day")),
+				]);
+				return json({
+					total: Number(total.data[0]?.events ?? 0),
+					series: series.data,
+				});
+			} catch (error) {
+				const detail =
+					error instanceof QueryError
+						? { status: error.status, body: error.body }
+						: undefined;
+				return json({ error: "query failed", detail }, 500);
+			}
+		}
+
+		const siteId = url.searchParams.get("siteId");
+		if (!isValidSiteId(siteId)) {
+			return json({ error: "invalid siteId" }, 400);
+		}
 
 		if (url.pathname === "/api/realtime") {
 			const to = Date.now();
