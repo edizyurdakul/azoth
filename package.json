@@ -26,6 +26,6 @@
 		"lefthook": "^2.1.10"
 	},
 	"peerDependencies": {
-		"typescript": "^7.0.2"
+		"typescript": "^5"
 	}
 }
