@@ -8,6 +8,14 @@ account_id = "c75d227e3f15f7d99bb6a8a66fad5072"
 binding = "SITES"
 id = "d192a97acc2b4bb592c53788e105ad0f"
 
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1002"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
 [vars]
 CF_ACCOUNT_ID = "c75d227e3f15f7d99bb6a8a66fad5072"
 INGESTION_URL = "https://ingestion.edizyurdakul.workers.dev"

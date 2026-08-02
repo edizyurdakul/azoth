@@ -133,6 +133,8 @@ describe("buildPageview", () => {
 
 describe("worker endpoint", () => {
 	const written: AnalyticsEngineDataPoint[] = [];
+	let rateLimitOutcome = { success: true };
+	const rateLimitKeys: string[] = [];
 	const testEnv: Cloudflare.Env = {
 		ANALYTICS: {
 			writeDataPoint: (data?: AnalyticsEngineDataPoint) => {
@@ -141,10 +143,18 @@ describe("worker endpoint", () => {
 				}
 			},
 		},
+		RATE_LIMITER: {
+			limit: async (options) => {
+				rateLimitKeys.push(options.key);
+				return rateLimitOutcome;
+			},
+		},
 	};
 
 	beforeEach(() => {
 		written.length = 0;
+		rateLimitKeys.length = 0;
+		rateLimitOutcome = { success: true };
 	});
 
 	test("collects a valid pageview and returns a CORS-enabled 200", async () => {
@@ -160,6 +170,34 @@ describe("worker endpoint", () => {
 		expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
 		expect(written).toHaveLength(1);
 		expect(written[0]?.indexes).toEqual(["site-1"]);
+	});
+
+	test("keys the rate limit by client IP and siteId", async () => {
+		const response = await worker.fetch(
+			new Request("https://ingest.example.com/collect?siteId=site-1", {
+				method: "POST",
+				headers: { "user-agent": UA, "cf-connecting-ip": "203.0.113.7" },
+			}),
+			testEnv,
+		);
+
+		expect(response.status).toBe(200);
+		expect(rateLimitKeys).toEqual(["203.0.113.7|site-1"]);
+	});
+
+	test("returns 429 without writing when the rate limit is exceeded", async () => {
+		rateLimitOutcome = { success: false };
+
+		const response = await worker.fetch(
+			new Request("https://ingest.example.com/collect?siteId=site-1", {
+				method: "POST",
+				headers: { "user-agent": UA },
+			}),
+			testEnv,
+		);
+
+		expect(response.status).toBe(429);
+		expect(written).toHaveLength(0);
 	});
 
 	test("answers an OPTIONS preflight with CORS headers", async () => {
