@@ -11,6 +11,7 @@ export default {
 				"tracker",
 				"cli",
 				"schema",
+				"storage",
 				"ua-parser",
 				"repo",
 			],

@@ -1,3 +1,4 @@
+import { archiveDay } from "./archive";
 import {
 	authCookie,
 	clearAuthCookie,
@@ -120,6 +121,17 @@ async function handleSites(
 }
 
 export default {
+	async scheduled(
+		_controller: ScheduledController,
+		env: Cloudflare.Env,
+	): Promise<void> {
+		if (env.STORAGE_ENABLED !== "true") {
+			return;
+		}
+		const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+		await archiveDay(env, yesterday);
+	},
+
 	async fetch(request: Request, env: Cloudflare.Env): Promise<Response> {
 		const url = new URL(request.url);
 
