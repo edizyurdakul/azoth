@@ -13,6 +13,8 @@ export const BLOB_FIELDS = [
 
 export const DOUBLE_FIELDS = ["timestamp"] as const;
 
+export const SCHEMA_VERSION = 1;
+
 export function blobColumn(field: (typeof BLOB_FIELDS)[number]): string {
 	const index = BLOB_FIELDS.indexOf(field);
 	return `blob${index + 1}`;
