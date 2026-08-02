@@ -5,6 +5,12 @@ Conventional Commits — `feat` bumps minor, `fix` bumps patch, breaking changes
 bump major. Because nothing here is published, the version is a signal to
 self-hosters about breaking config/schema changes, not an npm release.
 
+## [v1.0.1](https://github.com/edizyurdakul/azoth/compare/v1.0.0...v1.0.1) (2026-08-02)
+
+### Bug Fixes
+- fix(repo): land releases via PR instead of pushing to main (#16) ([681c3db](https://github.com/edizyurdakul/azoth/commit/681c3db016aa04832a4ab99318511566412935e3))
+- fix(dashboard): harden auth, responses, and query builders (#15) ([6a854e6](https://github.com/edizyurdakul/azoth/commit/6a854e60326a0ecf444cee8088d8adcf66f4f62f))
+
 ## [1.0.0](https://github.com/edizyurdakul/azoth/releases/tag/v1.0.0) (2026-08-02)
 
 First public release: cookieless, self-hosted web analytics on Cloudflare
