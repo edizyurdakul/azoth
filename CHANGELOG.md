@@ -5,6 +5,12 @@ Conventional Commits — `feat` bumps minor, `fix` bumps patch, breaking changes
 bump major. Because nothing here is published, the version is a signal to
 self-hosters about breaking config/schema changes, not an npm release.
 
+## [v1.3.0](https://github.com/edizyurdakul/azoth/compare/v1.2.0...v1.3.0) (2026-08-02)
+
+### Features
+- feat(dashboard): hybrid R2+AE read path ([1a11757](https://github.com/edizyurdakul/azoth/commit/1a11757b22884f9d6a6f70c4a893dc7e61b74151))
+- feat(storage): add AE-shape aggregation engine ([6b09d98](https://github.com/edizyurdakul/azoth/commit/6b09d9837bbfbe06574312eba7cae0b08dae2a14))
+
 ## [v1.2.0](https://github.com/edizyurdakul/azoth/compare/v1.1.0...v1.2.0) (2026-08-02)
 
 ### Features
