@@ -57,3 +57,23 @@ export function breakdown(
 export function bounceRate(range: TimeRange): string {
 	return `SELECT countIf(cnt = 1) AS bounces, COUNT() AS visitors FROM (SELECT COUNT() AS cnt FROM ${DATASET} WHERE ${rangeClause(range)} GROUP BY ${blobColumn("visitorHash")})`;
 }
+
+export interface AccountRange {
+	from: number;
+	to: number;
+}
+
+function accountRangeClause({ from, to }: AccountRange): string {
+	return `${doubleColumn("timestamp")} >= ${from} AND ${doubleColumn("timestamp")} < ${to}`;
+}
+
+export function totalEvents({ from, to }: AccountRange): string {
+	return `SELECT COUNT() AS events FROM ${DATASET} WHERE ${accountRangeClause({ from, to })}`;
+}
+
+export function eventsOverTime(
+	{ from, to }: AccountRange,
+	bucket: TimeBucket,
+): string {
+	return `SELECT ${bucketExpression(bucket)} AS t, COUNT() AS events FROM ${DATASET} WHERE ${accountRangeClause({ from, to })} GROUP BY t ORDER BY t ASC`;
+}
