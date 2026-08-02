@@ -5,6 +5,11 @@ Conventional Commits — `feat` bumps minor, `fix` bumps patch, breaking changes
 bump major. Because nothing here is published, the version is a signal to
 self-hosters about breaking config/schema changes, not an npm release.
 
+## [v1.2.0](https://github.com/edizyurdakul/azoth/compare/v1.1.0...v1.2.0) (2026-08-02)
+
+### Features
+- feat(r2-archiver): R2/Arrow daily archive (#22) ([7a4d6ae](https://github.com/edizyurdakul/azoth/commit/7a4d6ae1815dbd83f37d4f655fa82f092a505f23))
+
 ## [v1.1.0](https://github.com/edizyurdakul/azoth/compare/v1.0.2...v1.1.0) (2026-08-02)
 
 ### Features
