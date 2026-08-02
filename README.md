@@ -29,3 +29,7 @@ See `docs/cli.md` for the full CLI design.
 | `bun run test` | Runs every workspace's test suite |
 
 This project was created using `bun init` in bun v1.3.14. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+
+## License
+
+[MIT](LICENSE) © 2026 Ediz Yurdakul
