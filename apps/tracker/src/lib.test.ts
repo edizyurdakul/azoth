@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { buildPageviewUrl, trackPageview } from "./lib";
+import { buildPageviewUrl, isOptedOut, trackPageview } from "./lib";
 
 describe("buildPageviewUrl", () => {
 	test("builds /collect URL with siteId and path", () => {
@@ -147,5 +147,64 @@ describe("trackPageview", () => {
 		expect(sent()).toBe(
 			"https://ingestion.edizyurdakul.workers.dev/collect?siteId=site-1&path=%2Fblog%2Fhello%3Fq%3D1",
 		);
+	});
+});
+
+describe("isOptedOut", () => {
+	function stubNavigator(nav: Record<string, unknown>) {
+		(globalThis as Record<string, unknown>).navigator = nav;
+	}
+
+	afterEach(() => {
+		delete (globalThis as Record<string, unknown>).navigator;
+	});
+
+	test("returns false when neither GPC nor DNT is set", () => {
+		stubNavigator({ sendBeacon: () => true });
+		expect(isOptedOut()).toBe(false);
+	});
+
+	test("returns true when globalPrivacyControl is set", () => {
+		stubNavigator({ globalPrivacyControl: true, sendBeacon: () => true });
+		expect(isOptedOut()).toBe(true);
+	});
+
+	test("returns true when doNotTrack is 1", () => {
+		stubNavigator({ doNotTrack: "1", sendBeacon: () => true });
+		expect(isOptedOut()).toBe(true);
+	});
+
+	test("returns false when doNotTrack is unset or 0", () => {
+		stubNavigator({ doNotTrack: "0", sendBeacon: () => true });
+		expect(isOptedOut()).toBe(false);
+	});
+});
+
+describe("trackPageview with privacy signals", () => {
+	test("does not send a pageview when globalPrivacyControl is set", () => {
+		const { sent } = stubDom({});
+		(globalThis as Record<string, unknown>).navigator = {
+			globalPrivacyControl: true,
+			sendBeacon: (url: string) => {
+				// no-op
+				void url;
+				return true;
+			},
+		};
+		trackPageview();
+		expect(sent()).toBe("");
+	});
+
+	test("does not send a pageview when doNotTrack is 1", () => {
+		const { sent } = stubDom({});
+		(globalThis as Record<string, unknown>).navigator = {
+			doNotTrack: "1",
+			sendBeacon: (url: string) => {
+				void url;
+				return true;
+			},
+		};
+		trackPageview();
+		expect(sent()).toBe("");
 	});
 });
