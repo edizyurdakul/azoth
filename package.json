@@ -2,6 +2,7 @@
 	"name": "azoth",
 	"module": "index.ts",
 	"type": "module",
+	"license": "MIT",
 	"private": true,
 	"workspaces": [
 		"apps/*",
