@@ -15,5 +15,7 @@ jobs:
           bun-version: latest
       - run: bun install
       - run: bun run lint
+      - run: bun run --filter '@azoth/tracker' build
+      - run: bun run --filter '@azoth/dashboard-ui' build
       - run: bun run typecheck
       - run: bun run test
