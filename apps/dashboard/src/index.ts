@@ -6,19 +6,15 @@ import {
 	isAuthorized,
 } from "./auth";
 import {
-	bounceRate,
-	breakdown,
 	eventsOverTime,
-	pageviewsOverTime,
 	type TimeBucket,
 	type TimeRange,
-	topPages,
-	topReferrers,
 	totalEvents,
 	totalPageviews,
 	uniqueVisitors,
 } from "./queries";
 import { type QueryEnv, queryAnalytics } from "./query";
+import { readBreakdown, readPageviews, readUniques } from "./read";
 import {
 	createSite,
 	deleteSite,
@@ -250,59 +246,45 @@ export default {
 						return json({ error: "invalid bucket" }, 400);
 					}
 					const bucketValue: TimeBucket = rawBucket ?? "day";
-					const series = await queryAnalytics(
-						queryEnv,
-						pageviewsOverTime({ siteId, from, to }, bucketValue),
-					);
-					const total = await queryAnalytics(
-						queryEnv,
-						totalPageviews({ siteId, from, to }),
+					const range: TimeRange = { siteId, from, to };
+					const result = await readPageviews(
+						{ queryEnv, STORAGE: env.STORAGE },
+						range,
+						bucketValue,
 					);
 					return json({
-						series: series.data,
-						total: Number(total.data[0]?.pageviews ?? 0),
+						series: result.series,
+						total: result.total,
 					});
 				}
 				case "/api/uniques": {
-					const result = await queryAnalytics(
-						queryEnv,
-						uniqueVisitors({ siteId, from, to }),
+					const range: TimeRange = { siteId, from, to };
+					const uniques = await readUniques(
+						{ queryEnv, STORAGE: env.STORAGE },
+						range,
 					);
-					return json({
-						uniques: Number(result.data[0]?.uniques ?? 0),
-					});
+					return json({ uniques });
 				}
 				case "/api/breakdown": {
 					const range: TimeRange = { siteId, from, to };
-					const [pages, referrers, browsers, oses, devices, countries, bounce] =
-						await Promise.all([
-							queryAnalytics(queryEnv, topPages(range)),
-							queryAnalytics(queryEnv, topReferrers(range)),
-							queryAnalytics(queryEnv, breakdown(range, "browser")),
-							queryAnalytics(queryEnv, breakdown(range, "os")),
-							queryAnalytics(queryEnv, breakdown(range, "deviceType")),
-							queryAnalytics(queryEnv, breakdown(range, "country")),
-							queryAnalytics(queryEnv, bounceRate(range)),
-						]);
-					const bounceRow = bounce.data[0] as
-						| {
-								bounces?: string | number | null;
-								visitors?: string | number | null;
-						  }
-						| undefined;
-					const visitors = Number(bounceRow?.visitors ?? 0);
-					const bounces = Number(bounceRow?.bounces ?? 0);
+					const result = await readBreakdown(
+						{ queryEnv, STORAGE: env.STORAGE },
+						range,
+					);
 					return json({
-						pages: breakdownRows(pages.data),
-						referrers: breakdownRows(referrers.data),
-						browsers: breakdownRows(browsers.data),
-						oses: breakdownRows(oses.data),
-						devices: breakdownRows(devices.data),
-						countries: breakdownRows(countries.data),
+						pages: breakdownRows(result.pages),
+						referrers: breakdownRows(result.referrers),
+						browsers: breakdownRows(result.browsers),
+						oses: breakdownRows(result.oses),
+						devices: breakdownRows(result.devices),
+						countries: breakdownRows(result.countries),
 						bounce: {
-							bounces,
-							visitors,
-							rate: visitors > 0 ? bounces / visitors : 0,
+							bounces: result.bounce.bounces,
+							visitors: result.bounce.visitors,
+							rate:
+								result.bounce.visitors > 0
+									? result.bounce.bounces / result.bounce.visitors
+									: 0,
 						},
 					});
 				}
