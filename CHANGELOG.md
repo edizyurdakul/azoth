@@ -5,6 +5,11 @@ Conventional Commits — `feat` bumps minor, `fix` bumps patch, breaking changes
 bump major. Because nothing here is published, the version is a signal to
 self-hosters about breaking config/schema changes, not an npm release.
 
+## [v1.0.2](https://github.com/edizyurdakul/azoth/compare/v1.0.1...v1.0.2) (2026-08-02)
+
+### Bug Fixes
+- fix(repo): write release PR body to a file (#17) ([1e92882](https://github.com/edizyurdakul/azoth/commit/1e9288230c0151c26b4bddf3740f3f42170081c8))
+
 ## [v1.0.1](https://github.com/edizyurdakul/azoth/compare/v1.0.0...v1.0.1) (2026-08-02)
 
 ### Bug Fixes
