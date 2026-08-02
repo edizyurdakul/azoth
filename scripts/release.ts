@@ -83,19 +83,35 @@ const current = lastTag.replace(/^v/, "") || "0.0.0";
 console.log(`last tag: ${lastTag || "(none)"} (current ${current})`);
 
 // --- commits since the last tag ---------------------------------------------
-const commits: Commit[] = [];
+// Dedup against CHANGELOG.md: when the previous release PR hasn't been merged
+// yet (or was merged with a squash), its tag is not an ancestor of main, so
+// `git log <lastTag>..HEAD` re-counts commits that were already released.
+// Skip any commit whose SHA already appears in the changelog so those are
+// never double-counted.
+const changelogForDedup = readFileSync("CHANGELOG.md", "utf8");
+const releasedShas = new Set(
+	[...changelogForDedup.matchAll(/commit\/([0-9a-f]{7,40})/g)].map((m) =>
+		m[1].toLowerCase(),
+	),
+);
+const allCommits: Commit[] = [];
 if (lastTag) {
 	const shas = sh(`git log ${lastTag}..HEAD --format=%H`)
 		.split("\n")
 		.filter(Boolean);
 	for (const sha of shas) {
-		commits.push({
+		allCommits.push({
 			sha,
 			subject: sh(`git show -s --format=%s ${sha}`),
 			body: sh(`git show -s --format=%b ${sha}`),
 		});
 	}
 }
+const commits = allCommits.filter(
+	(c) =>
+		!releasedShas.has(c.sha.toLowerCase()) &&
+		!releasedShas.has(c.sha.slice(0, 7).toLowerCase()),
+);
 
 if (commits.some((c) => /\[skip release\]/i.test(`${c.subject} ${c.body}`))) {
 	console.log("found [skip release] — exiting without a release");
@@ -165,14 +181,27 @@ if (firstVersionHeader?.index !== undefined) {
 }
 
 // --- commit, tag, push, release ---------------------------------------------
+// `main` is protected by a "Block Main Push" ruleset (all changes must come
+// via PR, no bypass actors), so the CHANGELOG commit can never be pushed
+// directly to main. Instead:
+//   1. commit + tag on a `release/vX.Y.Z` branch,
+//   2. push the branch and the tag (the ruleset only covers the default
+//      branch, so tags push fine),
+//   3. publish the GitHub release against the tag,
+//   4. open a PR to land the CHANGELOG commit on main — merged manually by the
+//      maintainer. Until that PR merges, the new tag is not an ancestor of
+//      main; the changelog dedup above keeps the next run from double-counting.
+const releaseBranch = `release/v${next}`;
 sh(`git config user.name "github-actions[bot]"`);
 sh(
 	`git config user.email "41898282+github-actions[bot]@users.noreply.github.com"`,
 );
+sh(`git checkout -b ${releaseBranch}`);
 sh("git add CHANGELOG.md");
 sh(`git commit -m "chore(repo): release azoth v${next}"`);
 sh(`git tag v${next}`);
-sh("git push origin HEAD");
+
+sh(`git push origin ${releaseBranch}`);
 sh(`git push origin v${next}`);
 
 const notesFile = "/tmp/azoth-release-notes.md";
@@ -180,4 +209,14 @@ writeFileSync(notesFile, `${section}\n`);
 sh(
 	`gh release create v${next} --title "Azoth v${next}" --notes-file ${notesFile}`,
 );
-console.log(`published Azoth v${next}`);
+
+const prBody =
+	`Automated release PR for Azoth v${next}.\n\n` +
+	`The tag \`v${next}\` and the GitHub release were published directly from the workflow; ` +
+	`merging this PR lands the CHANGELOG.md update onto \`main\`.`;
+const prUrl = sh(
+	`gh pr create --base main --head ${releaseBranch} --title "chore(repo): release azoth v${next}" --body ${JSON.stringify(prBody)}`,
+);
+console.log(
+	`published Azoth v${next} — review and merge the release PR: ${prUrl}`,
+);
