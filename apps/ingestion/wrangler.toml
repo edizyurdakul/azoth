@@ -7,3 +7,11 @@ account_id = "c75d227e3f15f7d99bb6a8a66fad5072"
 [[analytics_engine_datasets]]
 binding = "ANALYTICS"
 dataset = "azoth"
+
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 60
+  period = 60

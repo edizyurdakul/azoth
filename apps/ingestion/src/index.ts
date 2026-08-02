@@ -112,6 +112,20 @@ export default {
 			return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
 		}
 
+		const siteIdParam = url.searchParams.get("siteId");
+		if (siteIdParam !== null) {
+			const ip = request.headers.get("cf-connecting-ip") ?? "";
+			const { success } = await env.RATE_LIMITER.limit({
+				key: `${ip}|${siteIdParam}`,
+			});
+			if (!success) {
+				return new Response("Too Many Requests", {
+					status: 429,
+					headers: CORS_HEADERS,
+				});
+			}
+		}
+
 		const event = await buildPageview(request, {
 			now: Date.now,
 			salt: dateSalt(),
