@@ -214,8 +214,10 @@ const prBody =
 	`Automated release PR for Azoth v${next}.\n\n` +
 	`The tag \`v${next}\` and the GitHub release were published directly from the workflow; ` +
 	`merging this PR lands the CHANGELOG.md update onto \`main\`.`;
+const prBodyFile = "/tmp/azoth-pr-body.md";
+writeFileSync(prBodyFile, prBody);
 const prUrl = sh(
-	`gh pr create --base main --head ${releaseBranch} --title "chore(repo): release azoth v${next}" --body ${JSON.stringify(prBody)}`,
+	`gh pr create --base main --head ${releaseBranch} --title "chore(repo): release azoth v${next}" --body-file ${prBodyFile}`,
 );
 console.log(
 	`published Azoth v${next} — review and merge the release PR: ${prUrl}`,
