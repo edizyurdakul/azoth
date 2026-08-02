@@ -5,6 +5,7 @@ declare namespace Cloudflare {
 		AUTH_SECRET: string;
 		SITES: KVNamespace;
 		INGESTION_URL?: string;
+		RATE_LIMITER: RateLimit;
 	}
 
 	interface GlobalProps {

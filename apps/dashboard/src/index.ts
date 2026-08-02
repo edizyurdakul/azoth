@@ -124,6 +124,13 @@ export default {
 		const url = new URL(request.url);
 
 		if (url.pathname === "/api/login" && request.method === "POST") {
+			const ip = request.headers.get("cf-connecting-ip") ?? "";
+			const { success } = await env.RATE_LIMITER.limit({
+				key: `login:${ip}`,
+			});
+			if (!success) {
+				return json({ error: "too many requests" }, 429);
+			}
 			const secret = (await request.json().catch(() => null)) as {
 				secret?: unknown;
 			} | null;

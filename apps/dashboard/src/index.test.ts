@@ -5,12 +5,14 @@ import worker from "./index";
 import { makeMockKV } from "./test/kv";
 
 const AUTH = { Authorization: "Bearer super-secret" };
+let rateLimitOutcome = { success: true };
 const testEnv: Cloudflare.Env = {
 	CF_ACCOUNT_ID: "acc-1",
 	CF_API_TOKEN: "token-1",
 	AUTH_SECRET: "super-secret",
 	SITES: makeMockKV(),
 	INGESTION_URL: "https://ingestion.edizyurdakul.workers.dev",
+	RATE_LIMITER: { limit: async () => rateLimitOutcome },
 };
 
 function stubQuery(data: unknown[], rows = data.length) {
@@ -37,6 +39,7 @@ function stubQueriesByBody(respond: (sql: string) => unknown[]) {
 describe("dashboard worker", () => {
 	beforeEach(() => {
 		vi.unstubAllGlobals();
+		rateLimitOutcome = { success: true };
 	});
 
 	test("requires authorization", async () => {
@@ -314,6 +317,24 @@ describe("dashboard worker", () => {
 		);
 
 		expect(response.status).toBe(400);
+	});
+
+	test("login returns 429 when the rate limit is exceeded", async () => {
+		rateLimitOutcome = { success: false };
+
+		const response = await worker.fetch(
+			new Request("https://dashboard.edizyurdakul.workers.dev/api/login", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"cf-connecting-ip": "203.0.113.7",
+				},
+				body: JSON.stringify({ secret: "super-secret" }),
+			}),
+			testEnv,
+		);
+
+		expect(response.status).toBe(429);
 	});
 
 	test("logout clears the auth cookie", async () => {
