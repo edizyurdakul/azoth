@@ -5,6 +5,11 @@ Conventional Commits — `feat` bumps minor, `fix` bumps patch, breaking changes
 bump major. Because nothing here is published, the version is a signal to
 self-hosters about breaking config/schema changes, not an npm release.
 
+## [v1.1.0](https://github.com/edizyurdakul/azoth/compare/v1.0.2...v1.1.0) (2026-08-02)
+
+### Features
+- feat: rate limit the ingestion collector and login route (#20) ([a1b57c4](https://github.com/edizyurdakul/azoth/commit/a1b57c470d6e960bd80f329c6dc6c59c5b5c4b30))
+
 ## [v1.0.2](https://github.com/edizyurdakul/azoth/compare/v1.0.1...v1.0.2) (2026-08-02)
 
 ### Bug Fixes
