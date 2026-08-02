@@ -12,7 +12,8 @@
 		"typescript": "^5"
 	},
 	"dependencies": {
-		"@azoth/schema": "workspace:*"
+		"@azoth/schema": "workspace:*",
+		"@azoth/storage": "workspace:*"
 	},
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "^0.20.1",

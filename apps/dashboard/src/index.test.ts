@@ -3,6 +3,7 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import worker from "./index";
 import { makeMockKV } from "./test/kv";
+import { makeMockR2 } from "./test/r2";
 
 const AUTH = { Authorization: "Bearer super-secret" };
 let rateLimitOutcome = { success: true };
@@ -11,6 +12,8 @@ const testEnv: Cloudflare.Env = {
 	CF_API_TOKEN: "token-1",
 	AUTH_SECRET: "super-secret",
 	SITES: makeMockKV(),
+	STORAGE: makeMockR2(),
+	STORAGE_ENABLED: "true",
 	INGESTION_URL: "https://ingestion.edizyurdakul.workers.dev",
 	RATE_LIMITER: { limit: async () => rateLimitOutcome },
 };
