@@ -1,8 +1,11 @@
+import { endOfDay, startOfDay } from "date-fns";
 import { CopyIcon, LogOutIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { DateRange } from "react-day-picker";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { toast } from "sonner";
 import { Breakdowns } from "@/components/breakdowns";
+import { DateRangePicker } from "@/components/date-range-picker";
 import { RealtimeWidget } from "@/components/realtime-widget";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,6 +49,7 @@ const RANGES = [
 	{ label: "7 days", days: 7 },
 	{ label: "30 days", days: 30 },
 	{ label: "90 days", days: 90 },
+	{ label: "Custom", days: null },
 ] as const;
 
 function loadSelectedSite(): string {
@@ -70,6 +74,7 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 	const [newSite, setNewSite] = useState("");
 	const [snippet, setSnippet] = useState("");
 	const [rangeKey, setRangeKey] = useState<string>(RANGES[1].label);
+	const [customRange, setCustomRange] = useState<DateRange | undefined>();
 	const [data, setData] = useState<OverviewData | null>(null);
 	const [breakdown, setBreakdown] = useState<BreakdownData | null>(null);
 	const [usage, setUsage] = useState<UsageData | null>(null);
@@ -79,6 +84,22 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 		() => RANGES.find((r) => r.label === rangeKey) ?? RANGES[1],
 		[rangeKey],
 	);
+
+	const defaultDays = RANGES.find((r) => r.days !== null)?.days ?? 30;
+
+	const fromTo = useMemo((): { from: number; to: number } => {
+		const to = Date.now();
+		if (range.days === null) {
+			if (customRange?.from !== undefined && customRange.to !== undefined) {
+				return {
+					from: startOfDay(customRange.from).getTime(),
+					to: endOfDay(customRange.to).getTime(),
+				};
+			}
+			return { from: to - defaultDays * 24 * 3600 * 1000, to };
+		}
+		return { from: to - range.days * 24 * 3600 * 1000, to };
+	}, [range, customRange, defaultDays]);
 
 	const refresh = useCallback(
 		async (site: string, from: number, to: number) => {
@@ -137,8 +158,7 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 			return;
 		}
 		setLoading(true);
-		const to = Date.now();
-		const from = to - range.days * 24 * 3600 * 1000;
+		const { from, to } = fromTo;
 		void refresh(siteId, from, to);
 		void fetchUsage(from, to)
 			.then(setUsage)
@@ -147,7 +167,7 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 					onUnauthorized();
 				}
 			});
-	}, [siteId, range, refresh, onUnauthorized]);
+	}, [siteId, fromTo, refresh, onUnauthorized]);
 
 	function handleAddSite() {
 		const name = newSite.trim();
@@ -333,6 +353,13 @@ export function Overview({ onUnauthorized }: { onUnauthorized: () => void }) {
 					))}
 				</TabsList>
 			</Tabs>
+			{rangeKey === "Custom" && (
+				<DateRangePicker
+					value={customRange}
+					onChange={setCustomRange}
+					className="w-fit"
+				/>
+			)}
 
 			{loading ? (
 				<div className="grid gap-4 sm:grid-cols-2">

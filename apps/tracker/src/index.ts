@@ -1,3 +1,4 @@
-import { trackPageview } from "./lib";
+import { initSpaTracking, trackPageview } from "./lib";
 
 trackPageview();
+initSpaTracking();
