@@ -4,7 +4,7 @@ export interface AuthEnv {
 	AUTH_SECRET: string;
 }
 
-function constantTimeEqual(a: string, b: string): boolean {
+export function constantTimeEqual(a: string, b: string): boolean {
 	const aBytes = new TextEncoder().encode(a);
 	const bBytes = new TextEncoder().encode(b);
 	if (aBytes.length !== bBytes.length) {

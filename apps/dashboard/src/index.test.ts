@@ -48,6 +48,7 @@ describe("dashboard worker", () => {
 		);
 
 		expect(response.status).toBe(401);
+		expect(response.headers.get("content-security-policy")).toBeTruthy();
 	});
 
 	test("returns pageviews series for an authorized request", async () => {

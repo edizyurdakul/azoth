@@ -1,4 +1,9 @@
-import { authCookie, clearAuthCookie, isAuthorized } from "./auth";
+import {
+	authCookie,
+	clearAuthCookie,
+	constantTimeEqual,
+	isAuthorized,
+} from "./auth";
 import {
 	bounceRate,
 	breakdown,
@@ -12,7 +17,7 @@ import {
 	totalPageviews,
 	uniqueVisitors,
 } from "./queries";
-import { type QueryEnv, QueryError, queryAnalytics } from "./query";
+import { type QueryEnv, queryAnalytics } from "./query";
 import {
 	createSite,
 	deleteSite,
@@ -35,10 +40,15 @@ function parseTimestamp(raw: string | null): number | null {
 	return Number.isFinite(value) && value >= 0 ? value : null;
 }
 
+const API_CSP = "default-src 'none'";
+
 function json(data: unknown, status = 200): Response {
 	return new Response(JSON.stringify(data), {
 		status,
-		headers: { "Content-Type": "application/json" },
+		headers: {
+			"Content-Type": "application/json",
+			"Content-Security-Policy": API_CSP,
+		},
 	});
 }
 
@@ -120,19 +130,25 @@ export default {
 			if (typeof secret?.secret !== "string" || secret.secret === "") {
 				return json({ error: "missing secret" }, 400);
 			}
-			if (secret.secret !== env.AUTH_SECRET) {
+			if (!constantTimeEqual(secret.secret, env.AUTH_SECRET)) {
 				return json({ error: "unauthorized" }, 401);
 			}
 			return new Response(null, {
 				status: 200,
-				headers: { "Set-Cookie": authCookie(env.AUTH_SECRET) },
+				headers: {
+					"Set-Cookie": authCookie(env.AUTH_SECRET),
+					"Content-Security-Policy": API_CSP,
+				},
 			});
 		}
 
 		if (url.pathname === "/api/logout" && request.method === "POST") {
 			return new Response(null, {
 				status: 200,
-				headers: { "Set-Cookie": clearAuthCookie() },
+				headers: {
+					"Set-Cookie": clearAuthCookie(),
+					"Content-Security-Policy": API_CSP,
+				},
 			});
 		}
 
@@ -168,12 +184,8 @@ export default {
 					total: Number(total.data[0]?.events ?? 0),
 					series: series.data,
 				});
-			} catch (error) {
-				const detail =
-					error instanceof QueryError
-						? { status: error.status, body: error.body }
-						: undefined;
-				return json({ error: "query failed", detail }, 500);
+			} catch {
+				return json({ error: "query failed" }, 500);
 			}
 		}
 
@@ -196,12 +208,8 @@ export default {
 					uniques: Number(uniques.data[0]?.uniques ?? 0),
 					pageviews: Number(pageviews.data[0]?.pageviews ?? 0),
 				});
-			} catch (error) {
-				const detail =
-					error instanceof QueryError
-						? { status: error.status, body: error.body }
-						: undefined;
-				return json({ error: "query failed", detail }, 500);
+			} catch {
+				return json({ error: "query failed" }, 500);
 			}
 		}
 
@@ -282,12 +290,8 @@ export default {
 				default:
 					return json({ error: "not found" }, 404);
 			}
-		} catch (error) {
-			const detail =
-				error instanceof QueryError
-					? { status: error.status, body: error.body }
-					: undefined;
-			return json({ error: "query failed", detail }, 500);
+		} catch {
+			return json({ error: "query failed" }, 500);
 		}
 	},
 } satisfies ExportedHandler<Cloudflare.Env>;
