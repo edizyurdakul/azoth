@@ -38,6 +38,13 @@ export interface TrackerConfig {
 	trackSearch: boolean;
 }
 
+export function isOptedOut(): boolean {
+	const nav = navigator as Navigator & {
+		globalPrivacyControl?: boolean;
+	};
+	return nav.globalPrivacyControl === true || nav.doNotTrack === "1";
+}
+
 export function readConfig(): TrackerConfig | null {
 	const current = document.currentScript as HTMLScriptElement | null;
 	if (current === null) {
@@ -66,6 +73,9 @@ function currentPath(): string | null {
 }
 
 export function trackPageview(options: { referrer?: string } = {}): void {
+	if (isOptedOut()) {
+		return;
+	}
 	const config = readConfig();
 	if (config === null) {
 		return;
