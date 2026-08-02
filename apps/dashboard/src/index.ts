@@ -1,4 +1,9 @@
-import { authCookie, clearAuthCookie, isAuthorized } from "./auth";
+import {
+	authCookie,
+	clearAuthCookie,
+	constantTimeEqual,
+	isAuthorized,
+} from "./auth";
 import {
 	bounceRate,
 	breakdown,
@@ -120,7 +125,7 @@ export default {
 			if (typeof secret?.secret !== "string" || secret.secret === "") {
 				return json({ error: "missing secret" }, 400);
 			}
-			if (secret.secret !== env.AUTH_SECRET) {
+			if (!constantTimeEqual(secret.secret, env.AUTH_SECRET)) {
 				return json({ error: "unauthorized" }, 401);
 			}
 			return new Response(null, {
