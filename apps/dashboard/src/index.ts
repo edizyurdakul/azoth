@@ -17,7 +17,7 @@ import {
 	totalPageviews,
 	uniqueVisitors,
 } from "./queries";
-import { type QueryEnv, QueryError, queryAnalytics } from "./query";
+import { type QueryEnv, queryAnalytics } from "./query";
 import {
 	createSite,
 	deleteSite,
@@ -173,12 +173,8 @@ export default {
 					total: Number(total.data[0]?.events ?? 0),
 					series: series.data,
 				});
-			} catch (error) {
-				const detail =
-					error instanceof QueryError
-						? { status: error.status, body: error.body }
-						: undefined;
-				return json({ error: "query failed", detail }, 500);
+			} catch {
+				return json({ error: "query failed" }, 500);
 			}
 		}
 
@@ -201,12 +197,8 @@ export default {
 					uniques: Number(uniques.data[0]?.uniques ?? 0),
 					pageviews: Number(pageviews.data[0]?.pageviews ?? 0),
 				});
-			} catch (error) {
-				const detail =
-					error instanceof QueryError
-						? { status: error.status, body: error.body }
-						: undefined;
-				return json({ error: "query failed", detail }, 500);
+			} catch {
+				return json({ error: "query failed" }, 500);
 			}
 		}
 
@@ -287,12 +279,8 @@ export default {
 				default:
 					return json({ error: "not found" }, 404);
 			}
-		} catch (error) {
-			const detail =
-				error instanceof QueryError
-					? { status: error.status, body: error.body }
-					: undefined;
-			return json({ error: "query failed", detail }, 500);
+		} catch {
+			return json({ error: "query failed" }, 500);
 		}
 	},
 } satisfies ExportedHandler<Cloudflare.Env>;
