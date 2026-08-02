@@ -1,6 +1,6 @@
 // @azoth/dashboard tests run under Vitest with @cloudflare/vitest-pool-workers
 // (workerd semantics, not Bun's default runner) — see apps/dashboard/vitest.config.ts.
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import worker from "./index";
 import { makeMockKV } from "./test/kv";
 import { makeMockR2 } from "./test/r2";
@@ -43,6 +43,12 @@ describe("dashboard worker", () => {
 	beforeEach(() => {
 		vi.unstubAllGlobals();
 		rateLimitOutcome = { success: true };
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-08-01T12:00:00Z"));
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
 	});
 
 	test("requires authorization", async () => {
@@ -62,7 +68,7 @@ describe("dashboard worker", () => {
 
 		const response = await worker.fetch(
 			new Request(
-				"https://dashboard.edizyurdakul.workers.dev/api/pageviews?siteId=site-1&from=1000&to=2000",
+				"https://dashboard.edizyurdakul.workers.dev/api/pageviews?siteId=site-1&from=1785499200000&to=1785585600000",
 				{ headers: AUTH },
 			),
 			testEnv,
@@ -80,7 +86,7 @@ describe("dashboard worker", () => {
 
 		const response = await worker.fetch(
 			new Request(
-				"https://dashboard.edizyurdakul.workers.dev/api/uniques?siteId=site-1&from=1000&to=2000",
+				"https://dashboard.edizyurdakul.workers.dev/api/uniques?siteId=site-1&from=1785499200000&to=1785585600000",
 				{ headers: AUTH },
 			),
 			testEnv,
@@ -100,7 +106,7 @@ describe("dashboard worker", () => {
 
 		const response = await worker.fetch(
 			new Request(
-				"https://dashboard.edizyurdakul.workers.dev/api/breakdown?siteId=site-1&from=1000&to=2000",
+				"https://dashboard.edizyurdakul.workers.dev/api/breakdown?siteId=site-1&from=1785499200000&to=1785585600000",
 				{ headers: AUTH },
 			),
 			testEnv,
@@ -124,7 +130,7 @@ describe("dashboard worker", () => {
 
 		const response = await worker.fetch(
 			new Request(
-				"https://dashboard.edizyurdakul.workers.dev/api/breakdown?siteId=site-1&from=1000&to=2000",
+				"https://dashboard.edizyurdakul.workers.dev/api/breakdown?siteId=site-1&from=1785499200000&to=1785585600000",
 				{ headers: AUTH },
 			),
 			testEnv,
@@ -261,7 +267,7 @@ describe("dashboard worker", () => {
 
 		const response = await worker.fetch(
 			new Request(
-				"https://dashboard.edizyurdakul.workers.dev/api/uniques?siteId=site-1&from=1000&to=2000",
+				"https://dashboard.edizyurdakul.workers.dev/api/uniques?siteId=site-1&from=1785499200000&to=1785585600000",
 				{ headers: AUTH },
 			),
 			testEnv,
@@ -357,7 +363,7 @@ describe("dashboard worker", () => {
 
 		const response = await worker.fetch(
 			new Request(
-				"https://dashboard.edizyurdakul.workers.dev/api/uniques?siteId=site-1&from=1000&to=2000",
+				"https://dashboard.edizyurdakul.workers.dev/api/uniques?siteId=site-1&from=1785499200000&to=1785585600000",
 				{ headers: { Cookie: "azoth_auth=super-secret" } },
 			),
 			testEnv,
