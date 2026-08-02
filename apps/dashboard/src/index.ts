@@ -40,10 +40,15 @@ function parseTimestamp(raw: string | null): number | null {
 	return Number.isFinite(value) && value >= 0 ? value : null;
 }
 
+const API_CSP = "default-src 'none'";
+
 function json(data: unknown, status = 200): Response {
 	return new Response(JSON.stringify(data), {
 		status,
-		headers: { "Content-Type": "application/json" },
+		headers: {
+			"Content-Type": "application/json",
+			"Content-Security-Policy": API_CSP,
+		},
 	});
 }
 
@@ -130,14 +135,20 @@ export default {
 			}
 			return new Response(null, {
 				status: 200,
-				headers: { "Set-Cookie": authCookie(env.AUTH_SECRET) },
+				headers: {
+					"Set-Cookie": authCookie(env.AUTH_SECRET),
+					"Content-Security-Policy": API_CSP,
+				},
 			});
 		}
 
 		if (url.pathname === "/api/logout" && request.method === "POST") {
 			return new Response(null, {
 				status: 200,
-				headers: { "Set-Cookie": clearAuthCookie() },
+				headers: {
+					"Set-Cookie": clearAuthCookie(),
+					"Content-Security-Policy": API_CSP,
+				},
 			});
 		}
 

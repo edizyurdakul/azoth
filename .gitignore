@@ -6,7 +6,8 @@ out
 dist
 *.tgz
 apps/ingestion/public
-apps/dashboard/public
+apps/dashboard/public/*
+!apps/dashboard/public/_headers
 
 # azoth cli state
 .azoth
